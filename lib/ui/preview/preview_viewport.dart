@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/project.dart';
@@ -47,6 +48,38 @@ class PreviewViewport extends StatelessWidget {
                     }
                     return _buildLayerWidget(layer, project, canvasSize);
                   }),
+
+                  // Empty Canvas Quick-Import Prompt
+                  if (project.layers.isEmpty)
+                    Center(
+                      child: GestureDetector(
+                        onTap: () => project.importMediaFile(),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1E2028).withOpacity(0.9),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFF00E5FF).withOpacity(0.4)),
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: const [
+                              Icon(Icons.add_photo_alternate_outlined, size: 38, color: Color(0xFF00E5FF)),
+                              SizedBox(height: 8),
+                              Text(
+                                "Tap to Add Video or Photo",
+                                style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                "Import media from your device to edit",
+                                style: TextStyle(color: Colors.white54, fontSize: 10),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
 
                   // 2. Interactive Transform Gizmo for selected layer
                   if (selectedLayer != null && selectedLayer.type != LayerType.camera)
@@ -192,76 +225,67 @@ class PreviewViewport extends StatelessWidget {
   Widget _renderLayerContent(LayerItem layer) {
     switch (layer.type) {
       case LayerType.video:
-        if (layer.chromaKeyEnabled) {
-          return Container(
-            width: 220,
-            height: 140,
-            decoration: BoxDecoration(
-              color: Colors.transparent,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFF00E676), width: 1.5),
-            ),
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+        // 1. If real media file exists on disk
+        if (layer.mediaPath != null && layer.mediaPath!.isNotEmpty) {
+          final file = File(layer.mediaPath!);
+          final ext = layer.name.split('.').last.toLowerCase();
+          final isImage = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp', 'heic'].contains(ext);
+
+          if (isImage && file.existsSync()) {
+            return ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: Image.file(
+                file,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) => _buildPlaceholderMedia(layer),
+              ),
+            );
+          }
+
+          if (file.existsSync()) {
+            // Real video file on device: render video preview
+            return Container(
+              width: 320,
+              height: 180,
+              decoration: BoxDecoration(
+                color: const Color(0xFF14151B),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: Colors.white24, width: 1),
+              ),
+              child: Stack(
+                alignment: Alignment.center,
                 children: [
-                  const Icon(Icons.auto_awesome, size: 40, color: Color(0xFF00E676)),
-                  const SizedBox(height: 4),
-                  Text(
-                    "${layer.name} [KEYED]",
-                    style: const TextStyle(color: Color(0xFF00E676), fontSize: 10, fontWeight: FontWeight.bold),
+                  const Icon(Icons.play_circle_outline, size: 52, color: Colors.white70),
+                  Positioned(
+                    bottom: 8,
+                    left: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.75),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        layer.name,
+                        style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                   ),
                 ],
               ),
-            ),
-          );
+            );
+          }
         }
-        return Container(
-          width: 220,
-          height: 140,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF1E88E5), Color(0xFF1565C0)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.white30, width: 1),
-          ),
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.movie_creation_outlined, size: 40, color: Colors.white70),
-                const SizedBox(height: 4),
-                Text(
-                  layer.name,
-                  style: const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-          ),
-        );
+
+        // Clean default video placeholder (NO fake gradients)
+        return _buildPlaceholderMedia(layer);
 
       case LayerType.audio:
-        return Container(
-          width: 180,
-          height: 60,
-          decoration: BoxDecoration(
-            color: const Color(0xFF00E676).withOpacity(0.85),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Center(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.audiotrack, color: Colors.black87, size: 24),
-                SizedBox(width: 6),
-                Text("Audio Wave", style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 12)),
-              ],
-            ),
-          ),
-        );
+        // Audio has no visual pixels on video canvas; it is displayed on the timeline tracks!
+        return const SizedBox.shrink();
 
       case LayerType.text:
         return Container(
@@ -308,29 +332,56 @@ class PreviewViewport extends StatelessWidget {
         );
 
       case LayerType.nullObject:
-        // Null objects are invisible in final render, but show red dashed cross in editor
+        // Null objects are invisible in final render, but show controller icon in editor
         return Container(
-          width: 50,
-          height: 50,
+          width: 44,
+          height: 44,
           decoration: BoxDecoration(
             border: Border.all(color: const Color(0xFFFF1744), width: 1.5),
             shape: BoxShape.rectangle,
           ),
           child: const Center(
-            child: Icon(Icons.control_camera, color: Color(0xFFFF1744), size: 16),
+            child: Icon(Icons.control_camera, color: Color(0xFFFF1744), size: 18),
           ),
         );
 
+      case LayerType.camera:
       case LayerType.adjustment:
-        return Container(
-          width: 200,
-          height: 120,
-          color: const Color(0x3300E5FF),
-        );
+        return const SizedBox.shrink();
 
       default:
         return const SizedBox.shrink();
     }
+  }
+
+  Widget _buildPlaceholderMedia(LayerItem layer) {
+    return Container(
+      width: 260,
+      height: 146,
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1B22),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: Colors.white12, width: 1),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.movie_creation_outlined, size: 36, color: Colors.white38),
+            const SizedBox(height: 6),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: Text(
+                layer.name,
+                style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _applyEffectsAndMask(LayerItem layer, Widget child) {

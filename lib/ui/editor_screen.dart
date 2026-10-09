@@ -81,6 +81,11 @@ class _EditorScreenState extends State<EditorScreen> {
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.add_photo_alternate_outlined, color: Color(0xFF00E5FF), size: 22),
+            tooltip: "Add Media",
+            onPressed: () => project.importMediaFile(),
+          ),
+          IconButton(
             icon: const Icon(Icons.undo, color: Colors.white70, size: 20),
             onPressed: () {},
           ),

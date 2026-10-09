@@ -162,35 +162,62 @@ class _ProjectSetupModalState extends State<ProjectSetupModal> {
           ),
           const SizedBox(height: 26),
 
-          // CTA Create Button
-          SizedBox(
-            width: double.infinity,
-            height: 50,
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF00E5FF),
-                foregroundColor: Colors.black,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                elevation: 0,
+          // CTA Buttons
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF00E5FF),
+                    side: const BorderSide(color: Color(0xFF00E5FF), width: 1.2),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  icon: const Icon(Icons.add_photo_alternate_outlined, size: 18),
+                  label: const Text("Select Media", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  onPressed: () async {
+                    final proj = manager.createNewProject(
+                      name: _nameController.text.trim().isEmpty ? "MotionF Project" : _nameController.text.trim(),
+                      aspectRatio: _selectedRatio,
+                      fps: _selectedFps,
+                    );
+                    Navigator.pop(context);
+                    await proj.importMediaFile();
+                    if (mounted) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const EditorScreen()),
+                      );
+                    }
+                  },
+                ),
               ),
-              icon: const Icon(Icons.movie_creation, size: 20),
-              label: const Text(
-                "Create Project & Open Editor",
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+              const SizedBox(width: 10),
+              Expanded(
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF00E5FF),
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  icon: const Icon(Icons.movie_creation, size: 18),
+                  label: const Text("Blank Project", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  onPressed: () {
+                    manager.createNewProject(
+                      name: _nameController.text.trim().isEmpty ? "MotionF Project" : _nameController.text.trim(),
+                      aspectRatio: _selectedRatio,
+                      fps: _selectedFps,
+                    );
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const EditorScreen()),
+                    );
+                  },
+                ),
               ),
-              onPressed: () {
-                final proj = manager.createNewProject(
-                  name: _nameController.text.trim().isEmpty ? "MotionF Project" : _nameController.text.trim(),
-                  aspectRatio: _selectedRatio,
-                  fps: _selectedFps,
-                );
-                Navigator.pop(context); // close modal
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const EditorScreen()),
-                );
-              },
-            ),
+            ],
           ),
         ],
       ),

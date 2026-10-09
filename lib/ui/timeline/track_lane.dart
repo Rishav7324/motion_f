@@ -45,6 +45,30 @@ class TrackLane extends StatelessWidget {
                 project: project,
                 pixelsPerSecond: pixelsPerSecond,
               )),
+
+          // Inline "+ Add Media" button on primary track (CapCut style)
+          if (trackIndex == 0)
+            Positioned(
+              left: layers.isEmpty
+                  ? 12.0
+                  : (layers.map((l) => l.startTime + l.duration).reduce((a, b) => a > b ? a : b) * pixelsPerSecond + 8.0),
+              top: 7,
+              bottom: 7,
+              child: GestureDetector(
+                onTap: () => project.importMediaFile(),
+                child: Container(
+                  width: 34,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF222532),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: const Color(0xFF00E5FF).withOpacity(0.5)),
+                  ),
+                  child: const Center(
+                    child: Icon(Icons.add, size: 18, color: Color(0xFF00E5FF)),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );

@@ -361,40 +361,71 @@ class ProjectModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> importMediaFile() async {
+  Future<bool> importMediaFile({bool allowMultiple = true}) async {
     try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['mp4', 'mov', 'mkv', 'avi', 'mp3', 'wav', 'aac', 'png', 'jpg', 'jpeg'],
-      );
+      FilePickerResult? result;
+      try {
+        result = await FilePicker.platform.pickFiles(
+          type: FileType.any,
+          allowMultiple: allowMultiple,
+        );
+      } catch (e) {
+        debugPrint("FilePicker.any failed: $e, falling back to FileType.media");
+        result = await FilePicker.platform.pickFiles(
+          type: FileType.media,
+          allowMultiple: allowMultiple,
+        );
+      }
 
-      if (result != null && result.files.single.path != null) {
-        final path = result.files.single.path!;
-        final name = result.files.single.name;
-        final ext = name.split('.').last.toLowerCase();
+      if (result != null && result.files.isNotEmpty) {
+        double currentInsertTime = playheadTime;
 
-        LayerType lType = LayerType.video;
-        int track = 0;
-        if (['mp3', 'wav', 'aac', 'm4a'].contains(ext)) {
-          lType = LayerType.audio;
-          track = 1;
+        for (final file in result.files) {
+          if (file.path == null) continue;
+          final path = file.path!;
+          final name = file.name;
+          final ext = name.split('.').last.toLowerCase();
+
+          final isAudio = ['mp3', 'wav', 'aac', 'm4a', 'flac', 'ogg', 'wma'].contains(ext);
+          final isImage = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp', 'heic'].contains(ext);
+
+          final lType = isAudio ? LayerType.audio : LayerType.video;
+          final track = isAudio ? 1 : 0;
+          final durationSeconds = isImage ? 4.0 : 8.0;
+
+          final newLayer = LayerItem(
+            id: "media_${DateTime.now().millisecondsSinceEpoch}_${layers.length}",
+            name: name,
+            type: lType,
+            mediaPath: path,
+            startTime: currentInsertTime,
+            duration: durationSeconds,
+            trackIndex: track,
+            layerColor: isAudio
+                ? const Color(0xFF00E676)
+                : (isImage ? const Color(0xFFFF9100) : const Color(0xFF2979FF)),
+          );
+
+          addLayer(newLayer);
+          selectedLayerId = newLayer.id;
+
+          if (!isAudio) {
+            currentInsertTime += durationSeconds;
+          }
+
+          if (newLayer.startTime + newLayer.duration > duration) {
+            duration = newLayer.startTime + newLayer.duration + 2.0;
+          }
         }
 
-        final newLayer = LayerItem(
-          id: "media_${DateTime.now().millisecondsSinceEpoch}",
-          name: name,
-          type: lType,
-          mediaPath: path,
-          startTime: playheadTime,
-          duration: 8.0,
-          trackIndex: track,
-        );
-
-        addLayer(newLayer);
+        lastModified = DateTime.now();
+        notifyListeners();
+        return true;
       }
     } catch (e) {
       debugPrint("File picking cancelled or error: $e");
     }
+    return false;
   }
 
   void populateDemoLayers() {
@@ -493,70 +524,89 @@ class ProjectManager extends ChangeNotifier {
   }
 
   void _initDefaultProjects() {
-    // Project 1: Cyberpunk 3D Camera Intro
-    final p1 = ProjectModel(
-      name: "Cyberpunk 3D Camera",
+    // Start with empty project list so user has full control (no fake demo projects)
+    activeProject = ProjectModel(
+      name: "New Project",
       aspectRatio: CanvasAspectRatio.vertical9_16,
-      fps: 60,
-      duration: 15.0,
-      lastModified: DateTime.now().subtract(const Duration(minutes: 15)),
-    );
-    p1.populateDemoLayers();
-    projects.add(p1);
-
-    // Project 2: Cinematic Vlog Montage
-    final p2 = ProjectModel(
-      name: "Cinematic Travel Vlog",
-      aspectRatio: CanvasAspectRatio.landscape16_9,
       fps: 30,
-      duration: 30.0,
-      lastModified: DateTime.now().subtract(const Duration(hours: 3)),
-    );
-    p2.layers.add(LayerItem(
-      id: "vlog_video",
-      name: "Golden Hour Ocean.mp4",
-      type: LayerType.video,
-      startTime: 0.0,
       duration: 15.0,
-      trackIndex: 0,
-      vignette: 0.4,
-      temperature: 0.3,
-    ));
-    p2.layers.add(LayerItem(
-      id: "vlog_bgm",
-      name: "Acoustic Melody.mp3",
-      type: LayerType.audio,
-      startTime: 0.0,
-      duration: 20.0,
-      trackIndex: 1,
-      layerColor: const Color(0xFF00E676),
-    ));
-    projects.add(p2);
-
-    // Project 3: Reels Kinetic Typography
-    final p3 = ProjectModel(
-      name: "Reels Kinetic Promo",
-      aspectRatio: CanvasAspectRatio.vertical9_16,
-      fps: 60,
-      duration: 10.0,
-      lastModified: DateTime.now().subtract(const Duration(days: 1)),
+      lastModified: DateTime.now(),
     );
-    p3.layers.add(LayerItem(
-      id: "promo_text",
-      name: "Big Hook Text",
-      type: LayerType.text,
-      startTime: 0.0,
-      duration: 5.0,
-      trackIndex: 0,
-      textContent: "CREATE MAGIC",
-      fontSize: 32.0,
-      textColor: const Color(0xFFFFD600),
-      hasTextStroke: true,
-      textStrokeWidth: 3.0,
-    ));
-    projects.add(p3);
+  }
 
-    activeProject = p1;
+  Future<ProjectModel?> createProjectFromMedia() async {
+    try {
+      FilePickerResult? result;
+      try {
+        result = await FilePicker.platform.pickFiles(
+          type: FileType.any,
+          allowMultiple: true,
+        );
+      } catch (e) {
+        debugPrint("FilePicker.any error: $e, falling back to FileType.media");
+        result = await FilePicker.platform.pickFiles(
+          type: FileType.media,
+          allowMultiple: true,
+        );
+      }
+
+      if (result != null && result.files.isNotEmpty) {
+        final now = DateTime.now();
+        final name = "Motion_${now.month}${now.day}_${now.hour}${now.minute}";
+        final newProj = createNewProject(
+          name: name,
+          aspectRatio: CanvasAspectRatio.vertical9_16,
+          fps: 30,
+          duration: 15.0,
+        );
+
+        double currentInsertTime = 0.0;
+        for (final file in result.files) {
+          if (file.path == null) continue;
+          final path = file.path!;
+          final fname = file.name;
+          final ext = fname.split('.').last.toLowerCase();
+
+          final isAudio = ['mp3', 'wav', 'aac', 'm4a', 'flac', 'ogg', 'wma'].contains(ext);
+          final isImage = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp', 'heic'].contains(ext);
+
+          final lType = isAudio ? LayerType.audio : LayerType.video;
+          final track = isAudio ? 1 : 0;
+          final durationSeconds = isImage ? 4.0 : 8.0;
+
+          final layer = LayerItem(
+            id: "media_${DateTime.now().millisecondsSinceEpoch}_${newProj.layers.length}",
+            name: fname,
+            type: lType,
+            mediaPath: path,
+            startTime: currentInsertTime,
+            duration: durationSeconds,
+            trackIndex: track,
+            layerColor: isAudio
+                ? const Color(0xFF00E676)
+                : (isImage ? const Color(0xFFFF9100) : const Color(0xFF2979FF)),
+          );
+
+          newProj.addLayer(layer);
+          newProj.selectedLayerId = layer.id;
+
+          if (!isAudio) {
+            currentInsertTime += durationSeconds;
+          }
+        }
+
+        if (currentInsertTime + 2.0 > newProj.duration) {
+          newProj.duration = currentInsertTime + 2.0;
+        }
+
+        newProj.notifyListeners();
+        notifyListeners();
+        return newProj;
+      }
+    } catch (e) {
+      debugPrint("createProjectFromMedia error: $e");
+    }
+    return null;
   }
 
   void openProject(ProjectModel project) {
@@ -577,7 +627,6 @@ class ProjectManager extends ChangeNotifier {
       duration: duration,
       lastModified: DateTime.now(),
     );
-    newProj.populateDemoLayers();
     projects.insert(0, newProj);
     activeProject = newProj;
     notifyListeners();
@@ -635,10 +684,19 @@ class ProjectManager extends ChangeNotifier {
   }
 
   void deleteProject(String id) {
-    if (projects.length <= 1) return; // Keep at least one project
     projects.removeWhere((p) => p.id == id);
     if (activeProject.id == id) {
-      activeProject = projects.first;
+      if (projects.isNotEmpty) {
+        activeProject = projects.first;
+      } else {
+        activeProject = ProjectModel(
+          name: "New Project",
+          aspectRatio: CanvasAspectRatio.vertical9_16,
+          fps: 30,
+          duration: 15.0,
+          lastModified: DateTime.now(),
+        );
+      }
     }
     notifyListeners();
   }

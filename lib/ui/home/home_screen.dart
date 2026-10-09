@@ -22,45 +22,51 @@ class _HomeScreenState extends State<HomeScreen> {
     final manager = context.watch<ProjectManager>();
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0C0D11),
+      backgroundColor: const Color(0xFF0D0E12),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF14151B),
+        backgroundColor: const Color(0xFF13151C),
         elevation: 0,
         title: Row(
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF00E5FF), Color(0xFFD500F9)],
-                ),
+                color: const Color(0xFF1B1E28),
                 borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: const Color(0xFF2C3142)),
               ),
-              child: const Text(
-                "MOTION F",
-                style: TextStyle(
-                  color: Colors.black,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.2,
-                ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 7,
+                    height: 7,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF00E5FF),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  const Text(
+                    "MOTION F",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFD600).withOpacity(0.2),
-                borderRadius: BorderRadius.circular(4),
-                border: Border.all(color: const Color(0xFFFFD600), width: 0.8),
-              ),
-              child: const Text(
-                "STUDIO PRO",
-                style: TextStyle(
-                  color: Color(0xFFFFD600),
-                  fontSize: 9,
-                  fontWeight: FontWeight.bold,
-                ),
+            const Text(
+              "STUDIO",
+              style: TextStyle(
+                color: Colors.white38,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.0,
               ),
             ),
           ],
@@ -68,6 +74,7 @@ class _HomeScreenState extends State<HomeScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined, color: Colors.white70),
+            tooltip: "Settings",
             onPressed: () => AppSettingsSheet.show(context),
           ),
         ],
@@ -75,8 +82,8 @@ class _HomeScreenState extends State<HomeScreen> {
       body: _buildCurrentTab(context, manager),
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
-          color: Color(0xFF14151B),
-          border: Border(top: BorderSide(color: Colors.white10)),
+          color: Color(0xFF13151C),
+          border: Border(top: BorderSide(color: Color(0xFF20232E))),
         ),
         child: BottomNavigationBar(
           currentIndex: _currentNavIndex,
@@ -84,15 +91,15 @@ class _HomeScreenState extends State<HomeScreen> {
           backgroundColor: Colors.transparent,
           elevation: 0,
           selectedItemColor: const Color(0xFF00E5FF),
-          unselectedItemColor: Colors.white54,
+          unselectedItemColor: Colors.white38,
           selectedFontSize: 11,
           unselectedFontSize: 11,
           type: BottomNavigationBarType.fixed,
           items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.movie_creation_outlined), label: "Edit"),
+            BottomNavigationBarItem(icon: Icon(Icons.movie_filter_outlined), label: "Projects"),
             BottomNavigationBarItem(icon: Icon(Icons.auto_awesome), label: "VFX Elements"),
             BottomNavigationBarItem(icon: Icon(Icons.audiotrack), label: "Audio & SFX"),
-            BottomNavigationBarItem(icon: Icon(Icons.settings), label: "Settings"),
+            BottomNavigationBarItem(icon: Icon(Icons.settings_outlined), label: "Settings"),
           ],
         ),
       ),
@@ -103,8 +110,13 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_currentNavIndex == 1) {
       return Center(
         child: ElevatedButton.icon(
-          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD500F9)),
-          icon: const Icon(Icons.auto_awesome),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF1E2230),
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+          icon: const Icon(Icons.auto_awesome, color: Color(0xFF00E5FF)),
           label: const Text("Open Stock VFX Library"),
           onPressed: () => AssetLibrarySheet.show(context, manager.activeProject),
         ),
@@ -113,8 +125,13 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_currentNavIndex == 2) {
       return Center(
         child: ElevatedButton.icon(
-          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00E676), foregroundColor: Colors.black),
-          icon: const Icon(Icons.audiotrack),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF1E2230),
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+          icon: const Icon(Icons.audiotrack, color: Color(0xFF00E5FF)),
           label: const Text("Open Audio & SFX Library"),
           onPressed: () => AudioLibrarySheet.show(context, manager.activeProject),
         ),
@@ -129,110 +146,150 @@ class _HomeScreenState extends State<HomeScreen> {
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       children: [
-        // 1. Big Hero "New Project" Button
-        GestureDetector(
-          onTap: () => ProjectSetupModal.show(context),
-          child: Container(
-            height: 120,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF00B4D8), Color(0xFF7209B7)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF00E5FF).withOpacity(0.3),
-                  blurRadius: 20,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: Stack(
-              children: [
-                Positioned(
-                  right: -10,
-                  bottom: -15,
-                  child: Icon(Icons.add_circle, size: 130, color: Colors.white.withOpacity(0.12)),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(Icons.add, color: Colors.black, size: 24),
-                          ),
-                          const SizedBox(width: 14),
-                          const Text(
-                            "New Project",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 22,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        "Start editing with 3D Camera, Null layers, and Bezier curves",
-                        style: TextStyle(color: Colors.white70, fontSize: 11),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+        // 1. Sleek Matte Hero Card: "+ New Project" & "Import Media"
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF151720),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFF242735)),
           ),
-        ),
-        const SizedBox(height: 22),
-
-        // 2. Quick Tools Strip
-        const Text(
-          "STUDIO SUITE",
-          style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2),
-        ),
-        const SizedBox(height: 10),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildToolCard("3D Camera", Icons.videocam, const Color(0xFFD500F9), () {
-                ProjectSetupModal.show(context);
-              }),
-              const SizedBox(width: 10),
-              _buildToolCard("Chroma Key", Icons.palette, const Color(0xFF00E676), () {
-                _openEditor(context, manager, manager.activeProject);
-              }),
-              const SizedBox(width: 10),
-              _buildToolCard("Speed Ramp", Icons.speed, const Color(0xFFFFD600), () {
-                _openEditor(context, manager, manager.activeProject);
-              }),
-              const SizedBox(width: 10),
-              _buildToolCard("Stock Elements", Icons.auto_awesome, const Color(0xFF00E5FF), () {
-                AssetLibrarySheet.show(context, manager.activeProject);
-              }),
-              const SizedBox(width: 10),
-              _buildToolCard("Music & SFX", Icons.audiotrack, const Color(0xFFFF9100), () {
-                AudioLibrarySheet.show(context, manager.activeProject);
-              }),
+              Row(
+                children: [
+                  // Primary "+ New Project" button
+                  Expanded(
+                    flex: 3,
+                    child: InkWell(
+                      onTap: () => ProjectSetupModal.show(context),
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        height: 72,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1F2330),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFF2E3448)),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF00E5FF),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.add, color: Colors.black, size: 24),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: const [
+                                  Text(
+                                    "New Project",
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  SizedBox(height: 2),
+                                  Text(
+                                    "Blank timeline & canvas",
+                                    style: TextStyle(color: Colors.white54, fontSize: 11),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  // Direct Gallery / Media Import button
+                  Expanded(
+                    flex: 2,
+                    child: InkWell(
+                      onTap: () async {
+                        final proj = await manager.createProjectFromMedia();
+                        if (proj != null && mounted) {
+                          _openEditor(context, manager, proj);
+                        }
+                      },
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        height: 72,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1B1E28),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFF2C3244)),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: const [
+                            Icon(Icons.add_photo_alternate_outlined, color: Color(0xFF00E5FF), size: 24),
+                            SizedBox(height: 4),
+                            Text(
+                              "Import Media",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              // Subtle quick tools row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildQuickAction(
+                    icon: Icons.aspect_ratio,
+                    label: "Canvas Setup",
+                    onTap: () => ProjectSetupModal.show(context),
+                  ),
+                  _buildQuickAction(
+                    icon: Icons.video_library_outlined,
+                    label: "Add Video/Photo",
+                    onTap: () async {
+                      final proj = await manager.createProjectFromMedia();
+                      if (proj != null && mounted) {
+                        _openEditor(context, manager, proj);
+                      }
+                    },
+                  ),
+                  _buildQuickAction(
+                    icon: Icons.auto_awesome_outlined,
+                    label: "VFX Elements",
+                    onTap: () => AssetLibrarySheet.show(context, manager.activeProject),
+                  ),
+                  _buildQuickAction(
+                    icon: Icons.audiotrack_outlined,
+                    label: "Music & SFX",
+                    onTap: () => AudioLibrarySheet.show(context, manager.activeProject),
+                  ),
+                ],
+              ),
             ],
           ),
         ),
-        const SizedBox(height: 26),
+        const SizedBox(height: 24),
 
-        // 3. Recent Projects Header
+        // 2. Recent Projects Header
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -240,14 +297,15 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 const Text(
                   "Recent Projects",
-                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                  style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF22232C),
-                    borderRadius: BorderRadius.circular(10),
+                    color: const Color(0xFF1B1E28),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFF2B3040)),
                   ),
                   child: Text(
                     "${manager.projects.length}",
@@ -260,39 +318,94 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         const SizedBox(height: 14),
 
-        // 4. Project Cards Grid
-        ...manager.projects.map((proj) => _buildProjectCard(context, manager, proj)),
+        // 3. Project Cards or Clean Empty State
+        if (manager.projects.isEmpty)
+          _buildEmptyState(context, manager)
+        else
+          ...manager.projects.map((proj) => _buildProjectCard(context, manager, proj)),
       ],
     );
   }
 
-  Widget _buildToolCard(String label, IconData icon, Color color, VoidCallback onTap) {
-    return GestureDetector(
+  Widget _buildQuickAction({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
       onTap: onTap,
-      child: Container(
-        width: 88,
-        height: 80,
-        decoration: BoxDecoration(
-          color: const Color(0xFF181920),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white10),
-        ),
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              padding: const EdgeInsets.all(7),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.15),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: color, size: 20),
-            ),
-            const SizedBox(height: 6),
+            Icon(icon, size: 18, color: Colors.white70),
+            const SizedBox(height: 4),
             Text(
               label,
-              style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+              style: const TextStyle(color: Colors.white54, fontSize: 10),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context, ProjectManager manager) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF13151D),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF20232E)),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: const Color(0xFF1B1E28),
+                shape: BoxShape.circle,
+                border: Border.all(color: const Color(0xFF2C3244)),
+              ),
+              child: const Icon(Icons.movie_creation_outlined, color: Colors.white38, size: 28),
+            ),
+            const SizedBox(height: 14),
+            const Text(
+              "No Projects Yet",
+              style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              "Import videos and photos or create a blank canvas to begin editing.",
               textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white54, fontSize: 12),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF00E5FF),
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              icon: const Icon(Icons.add_photo_alternate_outlined, size: 18),
+              label: const Text(
+                "Import Media to Start",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+              ),
+              onPressed: () async {
+                final proj = await manager.createProjectFromMedia();
+                if (proj != null && mounted) {
+                  _openEditor(context, manager, proj);
+                } else if (mounted) {
+                  // If picker was cancelled, open project setup
+                  ProjectSetupModal.show(context);
+                }
+              },
             ),
           ],
         ),
@@ -304,30 +417,28 @@ class _HomeScreenState extends State<HomeScreen> {
     final aspectString = _formatAspect(proj.aspectRatio);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFF181920),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white10),
+        color: const Color(0xFF151720),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFF222634)),
       ),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         onTap: () => _openEditor(context, manager, proj),
         leading: Container(
-          width: 52,
-          height: 52,
+          width: 48,
+          height: 48,
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF1F2937), Color(0xFF111827)],
-            ),
+            color: const Color(0xFF1B1E28),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.white24, width: 0.8),
+            border: Border.all(color: const Color(0xFF2C3244)),
           ),
           child: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.movie, color: Color(0xFF00E5FF), size: 18),
+                const Icon(Icons.movie_outlined, color: Color(0xFF00E5FF), size: 18),
                 const SizedBox(height: 2),
                 Text(
                   aspectString,
@@ -339,7 +450,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         title: Text(
           proj.name,
-          style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+          style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
         ),
         subtitle: Padding(
           padding: const EdgeInsets.only(top: 4),
@@ -364,11 +475,13 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         trailing: PopupMenuButton<String>(
-          icon: const Icon(Icons.more_vert, color: Colors.white54),
-          color: const Color(0xFF22232C),
+          icon: const Icon(Icons.more_vert, color: Colors.white54, size: 20),
+          color: const Color(0xFF1E2230),
           onSelected: (val) {
             if (val == "open") {
               _openEditor(context, manager, proj);
+            } else if (val == "rename") {
+              _showRenameDialog(context, manager, proj);
             } else if (val == "duplicate") {
               manager.duplicateProject(proj.id);
             } else if (val == "delete") {
@@ -376,11 +489,61 @@ class _HomeScreenState extends State<HomeScreen> {
             }
           },
           itemBuilder: (context) => [
-            const PopupMenuItem(value: "open", child: Text("Open in Editor", style: TextStyle(color: Colors.white, fontSize: 12))),
-            const PopupMenuItem(value: "duplicate", child: Text("Duplicate", style: TextStyle(color: Colors.white, fontSize: 12))),
-            const PopupMenuItem(value: "delete", child: Text("Delete", style: TextStyle(color: Colors.redAccent, fontSize: 12))),
+            const PopupMenuItem(
+              value: "open",
+              child: Text("Open in Editor", style: TextStyle(color: Colors.white, fontSize: 12)),
+            ),
+            const PopupMenuItem(
+              value: "rename",
+              child: Text("Rename", style: TextStyle(color: Colors.white, fontSize: 12)),
+            ),
+            const PopupMenuItem(
+              value: "duplicate",
+              child: Text("Duplicate", style: TextStyle(color: Colors.white, fontSize: 12)),
+            ),
+            const PopupMenuItem(
+              value: "delete",
+              child: Text("Delete", style: TextStyle(color: Colors.redAccent, fontSize: 12)),
+            ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showRenameDialog(BuildContext context, ProjectManager manager, ProjectModel proj) {
+    final controller = TextEditingController(text: proj.name);
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: const Color(0xFF181B24),
+        title: const Text("Rename Project", style: TextStyle(color: Colors.white, fontSize: 16)),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(
+            hintText: "Project name",
+            hintStyle: TextStyle(color: Colors.white38),
+          ),
+        ),
+        actions: [
+          TextButton(
+            child: const Text("Cancel", style: TextStyle(color: Colors.white54)),
+            onPressed: () => Navigator.pop(context),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00E5FF), foregroundColor: Colors.black),
+            child: const Text("Save"),
+            onPressed: () {
+              final newName = controller.text.trim();
+              if (newName.isNotEmpty) {
+                manager.renameProject(proj.id, newName);
+              }
+              Navigator.pop(context);
+            },
+          ),
+        ],
       ),
     );
   }

@@ -2,7 +2,7 @@ name: motion_f
 description: "MotionF - Next-Generation Mobile Motion Graphics & Video Compositor combining CapCut UI/UX with After Effects 3D Camera, Null Layer, Bezier Curve Editor, and Keyframe Engine."
 publish_to: 'none'
 
-version: 1.0.3+4
+version: 1.0.4+5
 
 environment:
   sdk: '>=3.2.0 <4.0.0'
