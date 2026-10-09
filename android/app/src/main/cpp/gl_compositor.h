@@ -4,6 +4,8 @@
 #include <EGL/egl.h>
 #include <android/log.h>
 #include <vector>
+#include <utility>
+#include <algorithm>
 #include "motion_math.h"
 #include "gl_shaders.h"
 

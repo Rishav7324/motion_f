@@ -50,26 +50,13 @@ jobs:
       - name: Run Dart & Flutter Unit Tests
         run: flutter test --no-pub
 
-      - name: Build Android Release APK (ARM64 & Universal)
-        run: flutter build apk --release --split-per-abi
+      - name: Build Android Release APK
+        run: flutter build apk --release
 
-      - name: Upload ARM64-v8a APK Artifact
+      - name: Upload Release APK Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: MotionF-arm64-v8a-release
-          path: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
-          retention-days: 14
-
-      - name: Upload armeabi-v7a APK Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: MotionF-armeabi-v7a-release
-          path: build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
-          retention-days: 14
-
-      - name: Upload Universal Release APK Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: MotionF-universal-release
-          path: build/app/outputs/flutter-apk/app-release.apk
+          name: MotionF-release-apk
+          path: build/app/outputs/flutter-apk/*.apk
+          if-no-files-found: error
           retention-days: 14
