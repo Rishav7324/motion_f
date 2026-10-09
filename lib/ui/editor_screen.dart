@@ -201,7 +201,7 @@ class _EditorScreenState extends State<EditorScreen> {
                           child: Row(
                             children: [
                               Icon(
-                                Icons.magnet,
+                                Icons.center_focus_strong,
                                 size: 13,
                                 color: project.isSnappingEnabled ? const Color(0xFF00E5FF) : Colors.white54,
                               ),

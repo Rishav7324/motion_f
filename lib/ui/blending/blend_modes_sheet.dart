@@ -157,7 +157,7 @@ class _BlendModesSheetState extends State<BlendModesSheet> {
                             Text(
                               item["name"] as String,
                               style: TextStyle(
-                                color: isSel ? Colors.white : Colors.white90,
+                                color: isSel ? Colors.white : Colors.white70,
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,
                               ),
