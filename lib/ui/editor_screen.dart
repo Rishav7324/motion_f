@@ -115,40 +115,113 @@ class _EditorScreenState extends State<EditorScreen> {
               child: PreviewViewport(),
             ),
 
-            // 2. Playback Transport Bar
+            // 2. Playback Transport Bar with Precision Frame Stepping & Magnetic Snapping
             Container(
-              height: 36,
+              height: 40,
               color: const Color(0xFF14151B),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 14),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    "${_formatSec(project.playheadTime)} / ${_formatSec(project.duration)}",
-                    style: const TextStyle(color: Colors.white70, fontSize: 11, fontFamily: 'monospace'),
-                  ),
-                  IconButton(
-                    icon: Icon(
-                      project.isPlaying ? Icons.pause : Icons.play_arrow,
-                      color: Colors.white,
-                      size: 24,
-                    ),
-                    onPressed: () {
-                      project.togglePlayPause();
-                      if (project.isPlaying) {
-                        _startPlaybackTimer(project);
-                      } else {
-                        _playbackTimer?.cancel();
-                      }
-                    },
-                  ),
+                  // Timecode with frames
                   Row(
                     children: [
-                      const Icon(Icons.hd, size: 16, color: Colors.white54),
+                      const Icon(Icons.timer_outlined, size: 14, color: Color(0xFF00E5FF)),
                       const SizedBox(width: 4),
                       Text(
-                        "${project.canvasWidth}x${project.canvasHeight}",
-                        style: const TextStyle(color: Colors.white54, fontSize: 10),
+                        "${_formatSecWithFrames(project.playheadTime, project.fps)} / ${_formatSec(project.duration)}",
+                        style: const TextStyle(color: Colors.white, fontSize: 11, fontFamily: 'monospace', fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+
+                  // Center Playback & Frame Stepping Controls
+                  Row(
+                    children: [
+                      // Step Back 1 Frame
+                      IconButton(
+                        icon: const Icon(Icons.arrow_left, color: Colors.white70, size: 20),
+                        tooltip: "Previous Frame",
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                        onPressed: () => project.stepFrame(-1),
+                      ),
+                      // Play / Pause Button
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1E2028),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white24, width: 1),
+                        ),
+                        child: IconButton(
+                          padding: EdgeInsets.zero,
+                          icon: Icon(
+                            project.isPlaying ? Icons.pause : Icons.play_arrow,
+                            color: const Color(0xFF00E5FF),
+                            size: 20,
+                          ),
+                          onPressed: () {
+                            project.togglePlayPause();
+                            if (project.isPlaying) {
+                              _startPlaybackTimer(project);
+                            } else {
+                              _playbackTimer?.cancel();
+                            }
+                          },
+                        ),
+                      ),
+                      // Step Forward 1 Frame
+                      IconButton(
+                        icon: const Icon(Icons.arrow_right, color: Colors.white70, size: 20),
+                        tooltip: "Next Frame",
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                        onPressed: () => project.stepFrame(1),
+                      ),
+                    ],
+                  ),
+
+                  // Right: Magnetic Snapping & Resolution
+                  Row(
+                    children: [
+                      // Magnetic Snapping Toggle
+                      GestureDetector(
+                        onTap: () => project.toggleSnapping(),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: project.isSnappingEnabled ? const Color(0xFF00E5FF).withOpacity(0.2) : Colors.transparent,
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(
+                              color: project.isSnappingEnabled ? const Color(0xFF00E5FF) : Colors.white24,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.magnet,
+                                size: 13,
+                                color: project.isSnappingEnabled ? const Color(0xFF00E5FF) : Colors.white54,
+                              ),
+                              const SizedBox(width: 3),
+                              Text(
+                                "SNAP",
+                                style: TextStyle(
+                                  color: project.isSnappingEnabled ? const Color(0xFF00E5FF) : Colors.white54,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        "${project.fps}FPS",
+                        style: const TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
@@ -215,4 +288,12 @@ class _EditorScreenState extends State<EditorScreen> {
     int s = (sec % 60).floor();
     return "${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}";
   }
+
+  String _formatSecWithFrames(double sec, int fps) {
+    int m = (sec / 60).floor();
+    int s = (sec % 60).floor();
+    int f = ((sec - (m * 60 + s)) * (fps > 0 ? fps : 30)).floor();
+    return "${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}.${f.toString().padLeft(2, '0')}";
+  }
 }
+

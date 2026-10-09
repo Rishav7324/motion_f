@@ -85,6 +85,27 @@ class LayerItem {
   double temperature;         // -1.0 to 1.0 (default 0.0)
   double vignette;            // 0.0 to 1.0 (default 0.0)
 
+  // 3D LUT & Professional Color Grading Studio
+  String lutPreset;           // "None", "Teal & Orange", "Cyberpunk", "Kodachrome", etc.
+  double lutIntensity;        // 0.0 to 1.0 (default 1.0)
+  double exposure;            // -2.0 to 2.0 (default 0.0)
+  double highlights;          // -1.0 to 1.0 (default 0.0)
+  double shadows;             // -1.0 to 1.0 (default 0.0)
+  double vibrance;            // -1.0 to 1.0 (default 0.0)
+  double tint;                // -1.0 to 1.0 (default 0.0)
+  double sharpen;             // 0.0 to 1.0 (default 0.0)
+
+  // Motion Dynamics / AE Wiggle & Camera Shake
+  bool shakeEnabled;
+  double shakeFrequency;      // Hz (default 3.0)
+  double shakeAmplitude;      // px (default 15.0)
+  double shakeRotation;       // deg (default 2.0)
+  String shakePreset;         // "Handheld", "Impact", "Earthquake", "Jitter", "Pulse"
+
+  // Beat Detection Markers & Reverse Playback
+  List<double> beatMarkers;   // Timestamps of rhythmic beats
+  bool isReversed;            // Reverse video/audio playback
+
   // Chroma Key / Green Screen Removal
   bool chromaKeyEnabled;
   Color chromaKeyColor;
@@ -97,10 +118,13 @@ class LayerItem {
   bool isCurveSpeed;
   String curveSpeedPreset; // "Standard", "Montage", "Hero", "Bullet", "Jump Cut"
 
-  // Audio Envelope
+  // Audio Envelope & Ducking
   double volume; // 0.0 to 2.0 (1.0 = 100%)
   double fadeInDuration;
   double fadeOutDuration;
+  bool audioDuckingEnabled;
+  double audioDuckingAmount; // 0.0 to 1.0 (default 0.5)
+  String voiceEffectPreset;  // "None", "Studio Mic", "Deep Voice", "Bass Boost", etc.
 
   // CapCut Transitions (In / Out)
   TransitionType transitionIn;
@@ -178,6 +202,21 @@ class LayerItem {
     this.saturation = 1.0,
     this.temperature = 0.0,
     this.vignette = 0.0,
+    this.lutPreset = "None",
+    this.lutIntensity = 1.0,
+    this.exposure = 0.0,
+    this.highlights = 0.0,
+    this.shadows = 0.0,
+    this.vibrance = 0.0,
+    this.tint = 0.0,
+    this.sharpen = 0.0,
+    this.shakeEnabled = false,
+    this.shakeFrequency = 3.0,
+    this.shakeAmplitude = 15.0,
+    this.shakeRotation = 2.0,
+    this.shakePreset = "Handheld",
+    List<double>? beatMarkers,
+    this.isReversed = false,
     this.chromaKeyEnabled = false,
     this.chromaKeyColor = const Color(0xFF00FF00), // Default green screen
     this.chromaSimilarity = 0.4,
@@ -189,6 +228,9 @@ class LayerItem {
     this.volume = 1.0,
     this.fadeInDuration = 0.0,
     this.fadeOutDuration = 0.0,
+    this.audioDuckingEnabled = false,
+    this.audioDuckingAmount = 0.5,
+    this.voiceEffectPreset = "None",
     this.transitionIn = TransitionType.none,
     this.transitionInDuration = 0.5,
     this.transitionOut = TransitionType.none,
@@ -214,6 +256,7 @@ class LayerItem {
     double initialScale = 1.0,
     double initialRotZ = 0.0,
   })  : layerColor = layerColor ?? _getDefaultColor(type),
+        beatMarkers = beatMarkers ?? [],
         posX = AnimatableProperty(name: "Position X", defaultValue: initialX),
         posY = AnimatableProperty(name: "Position Y", defaultValue: initialY),
         posZ = AnimatableProperty(name: "Position Z", defaultValue: initialZ),

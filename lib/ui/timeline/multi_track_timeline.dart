@@ -35,16 +35,18 @@ class _MultiTrackTimelineState extends State<MultiTrackTimeline> {
       color: const Color(0xFF101115),
       child: Column(
         children: [
-          // 1. Time Ruler Header
+          // 1. Time Ruler Header with Magnetic Snapping & Beat Indicators
           GestureDetector(
             onPanUpdate: (details) {
               final localX = details.localPosition.dx + _scrollController.offset;
-              final newTime = (localX / _pixelsPerSecond).clamp(0.0, project.duration);
+              final rawTime = (localX / _pixelsPerSecond).clamp(0.0, project.duration);
+              final newTime = project.snapTime(rawTime);
               project.setPlayheadTime(newTime);
             },
             onTapDown: (details) {
               final localX = details.localPosition.dx + _scrollController.offset;
-              final newTime = (localX / _pixelsPerSecond).clamp(0.0, project.duration);
+              final rawTime = (localX / _pixelsPerSecond).clamp(0.0, project.duration);
+              final newTime = project.snapTime(rawTime);
               project.setPlayheadTime(newTime);
             },
             child: Container(
@@ -61,6 +63,7 @@ class _MultiTrackTimelineState extends State<MultiTrackTimeline> {
                     painter: _TimelineRulerPainter(
                       duration: project.duration,
                       pixelsPerSecond: _pixelsPerSecond,
+                      project: project,
                     ),
                   ),
                 ),
@@ -119,10 +122,12 @@ class _MultiTrackTimelineState extends State<MultiTrackTimeline> {
 class _TimelineRulerPainter extends CustomPainter {
   final double duration;
   final double pixelsPerSecond;
+  final ProjectModel project;
 
   _TimelineRulerPainter({
     required this.duration,
     required this.pixelsPerSecond,
+    required this.project,
   });
 
   @override
@@ -151,10 +156,23 @@ class _TimelineRulerPainter extends CustomPainter {
         canvas.drawLine(Offset(subX, 18), Offset(subX, 24), tickPaint);
       }
     }
+
+    // Glowing Beat markers along top ruler
+    final beatPaint = Paint()..color = const Color(0xFFFFD600);
+    for (final layer in project.layers) {
+      for (final bm in layer.beatMarkers) {
+        final bX = (layer.startTime + bm) * pixelsPerSecond;
+        if (bX >= 0 && bX <= size.width) {
+          canvas.drawCircle(Offset(bX, 18), 2.5, beatPaint);
+        }
+      }
+    }
   }
 
   @override
   bool shouldRepaint(covariant _TimelineRulerPainter oldDelegate) {
-    return oldDelegate.pixelsPerSecond != pixelsPerSecond || oldDelegate.duration != duration;
+    return oldDelegate.pixelsPerSecond != pixelsPerSecond ||
+        oldDelegate.duration != duration ||
+        oldDelegate.project.layers != project.layers;
   }
 }

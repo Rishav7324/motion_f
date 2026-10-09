@@ -11,6 +11,11 @@ import '../transitions/transition_sheet.dart';
 import '../text/text_styling_sheet.dart';
 import '../audio/audio_library_sheet.dart';
 import '../assets/asset_library_sheet.dart';
+import '../filters/lut_color_sheet.dart';
+import '../audio/beat_sync_sheet.dart';
+import '../effects/dynamics_shake_sheet.dart';
+import '../blending/blend_modes_sheet.dart';
+import '../stickers/stickers_sheet.dart';
 
 class ActionDock extends StatelessWidget {
   const ActionDock({super.key});
@@ -44,6 +49,50 @@ class ActionDock extends StatelessWidget {
           label: "Speed (${layer.speed.toStringAsFixed(1)}x)",
           color: (layer.speed != 1.0 || layer.isCurveSpeed) ? const Color(0xFFFFD600) : Colors.white,
           onTap: () => SpeedRampingSheet.show(context, layer, project),
+        ),
+        _buildToolBtn(
+          icon: Icons.palette_outlined,
+          label: "LUT Filters",
+          color: (layer.lutPreset != "None" || layer.exposure != 0) ? const Color(0xFF00E5FF) : Colors.white,
+          onTap: () => LutColorSheet.show(context, layer, project),
+        ),
+        _buildToolBtn(
+          icon: Icons.layers_outlined,
+          label: "Blend",
+          color: layer.blendMode != LayerBlendMode.normal ? const Color(0xFFFF4081) : Colors.white,
+          onTap: () => BlendModesSheet.show(context, layer, project),
+        ),
+        _buildToolBtn(
+          icon: Icons.vibration,
+          label: "Shake",
+          color: layer.shakeEnabled ? const Color(0xFFFF9100) : Colors.white,
+          onTap: () => DynamicsShakeSheet.show(context, layer, project),
+        ),
+        if (layer.type == LayerType.audio || layer.type == LayerType.video)
+          _buildToolBtn(
+            icon: Icons.music_note,
+            label: "Beats",
+            color: (layer.beatMarkers.isNotEmpty || layer.audioDuckingEnabled) ? const Color(0xFFFFD600) : Colors.white,
+            onTap: () => BeatSyncSheet.show(context, layer, project),
+          ),
+        if (layer.type == LayerType.video)
+          _buildToolBtn(
+            icon: Icons.ac_unit,
+            label: "Freeze",
+            onTap: () => project.freezeFrame(),
+          ),
+        if (layer.type == LayerType.video)
+          _buildToolBtn(
+            icon: Icons.audiotrack,
+            label: "Extract Audio",
+            color: const Color(0xFF00E676),
+            onTap: () => project.extractAudio(),
+          ),
+        _buildToolBtn(
+          icon: Icons.fast_rewind,
+          label: layer.isReversed ? "Reverse (On)" : "Reverse",
+          color: layer.isReversed ? const Color(0xFFFF9100) : Colors.white,
+          onTap: () => project.reverseSelectedLayer(),
         ),
         if (layer.type == LayerType.video)
           _buildToolBtn(
@@ -130,6 +179,24 @@ class ActionDock extends StatelessWidget {
               chromaKeyEnabled: layer.chromaKeyEnabled,
               chromaKeyColor: layer.chromaKeyColor,
               speed: layer.speed,
+              lutPreset: layer.lutPreset,
+              lutIntensity: layer.lutIntensity,
+              exposure: layer.exposure,
+              highlights: layer.highlights,
+              shadows: layer.shadows,
+              vibrance: layer.vibrance,
+              tint: layer.tint,
+              sharpen: layer.sharpen,
+              shakeEnabled: layer.shakeEnabled,
+              shakeFrequency: layer.shakeFrequency,
+              shakeAmplitude: layer.shakeAmplitude,
+              shakeRotation: layer.shakeRotation,
+              shakePreset: layer.shakePreset,
+              beatMarkers: List.from(layer.beatMarkers),
+              isReversed: layer.isReversed,
+              audioDuckingEnabled: layer.audioDuckingEnabled,
+              audioDuckingAmount: layer.audioDuckingAmount,
+              voiceEffectPreset: layer.voiceEffectPreset,
             );
             project.addLayer(clone);
           },
@@ -158,6 +225,12 @@ class ActionDock extends StatelessWidget {
           label: "+ Import",
           color: const Color(0xFF00E5FF),
           onTap: () => project.importMediaFile(),
+        ),
+        _buildToolBtn(
+          icon: Icons.emoji_emotions_outlined,
+          label: "+ Stickers",
+          color: const Color(0xFFFFEA00),
+          onTap: () => StickersSheet.show(context, project),
         ),
         _buildToolBtn(
           icon: Icons.auto_awesome,

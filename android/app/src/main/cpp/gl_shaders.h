@@ -301,4 +301,91 @@ void main() {
 }
 )glsl";
 
+// Cinematic 3D LUT Emulation & Filmic Color Grading Shader
+inline const char* FRAGMENT_SHADER_LUT_AND_FILMIC = R"glsl(#version 300 es
+precision mediump float;
+
+in vec2 vTexCoord;
+uniform sampler2D uTexture;
+
+uniform int uLutType;         // 0: None, 1: TealOrange, 2: Cyberpunk, 3: Kodachrome, 4: Noir, 5: GoldenHour, 6: Pastel
+uniform float uLutIntensity;  // 0.0 to 1.0
+uniform float uExposure;      // -2.0 to 2.0 (default 0.0)
+uniform float uHighlights;    // -1.0 to 1.0 (default 0.0)
+uniform float uShadows;       // -1.0 to 1.0 (default 0.0)
+uniform float uVibrance;      // -1.0 to 1.0 (default 0.0)
+uniform float uTint;          // -1.0 (green) to 1.0 (magenta)
+
+out vec4 fragColor;
+
+// ACES Filmic Tone Mapping Curve
+vec3 acesFilm(vec3 x) {
+    float a = 2.51;
+    float b = 0.03;
+    float c = 2.43;
+    float d = 0.59;
+    float e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);
+}
+
+void main() {
+    vec4 src = texture(uTexture, vTexCoord);
+    vec3 color = src.rgb;
+
+    // 1. Exposure adjustment
+    color *= exp2(uExposure);
+
+    // 2. Highlights & Shadows curve
+    float lum = dot(color, vec3(0.299, 0.587, 0.114));
+    if (lum > 0.5) {
+        color += color * uHighlights * (lum - 0.5) * 0.8;
+    } else {
+        color += (1.0 - color) * uShadows * (0.5 - lum) * 0.8;
+    }
+
+    // 3. Tint (green <-> magenta shift)
+    color.g -= uTint * 0.06;
+    color.r += uTint * 0.03;
+    color.b += uTint * 0.03;
+
+    // 4. Vibrance (intelligent saturation favoring muted tones)
+    float maxVal = max(color.r, max(color.g, color.b));
+    float minVal = min(color.r, min(color.g, color.b));
+    float sat = maxVal - minVal;
+    color = mix(vec3(lum), color, 1.0 + uVibrance * (1.0 - sat));
+
+    // 5. Cinematic LUT Color grading matrix transforms
+    vec3 graded = color;
+    if (uLutType == 1) {
+        // Teal & Orange: Push shadows to teal (0, 0.8, 0.9), highlights to warm orange (1.0, 0.6, 0.2)
+        vec3 teal = vec3(0.0, 0.85, 0.95);
+        vec3 orange = vec3(1.0, 0.62, 0.22);
+        graded = mix(teal * lum * 1.2, orange * lum * 1.3, smoothstep(0.2, 0.7, lum));
+        graded = mix(color, graded, 0.7);
+    } else if (uLutType == 2) {
+        // Cyberpunk Neon: Boost blues & magentas, crush mids
+        graded = vec3(color.r * 1.35, color.g * 0.75, color.b * 1.45);
+        graded = acesFilm(graded);
+    } else if (uLutType == 3) {
+        // Kodachrome 35mm: Classic warm film grain aesthetic, rich reds and deep cyan shadows
+        graded = vec3(pow(color.r, 0.9) * 1.1, pow(color.g, 1.0), pow(color.b, 1.1) * 0.92);
+    } else if (uLutType == 4) {
+        // Moody Noir: High contrast black & white with filmic curve
+        float bw = dot(color, vec3(0.3, 0.59, 0.11));
+        bw = smoothstep(0.1, 0.9, bw);
+        graded = vec3(bw);
+    } else if (uLutType == 5) {
+        // Golden Hour: Warm sunlight amber glow
+        graded = color * vec3(1.15, 0.98, 0.82);
+    } else if (uLutType == 6) {
+        // Pastel Dream: Lift shadows, soft low-contrast tones
+        graded = color * 0.85 + 0.15;
+    }
+
+    vec3 finalColor = mix(color, graded, clamp(uLutIntensity, 0.0, 1.0));
+    fragColor = vec4(clamp(finalColor, 0.0, 1.0), src.a);
+}
+)glsl";
+
 } // namespace motionf
+

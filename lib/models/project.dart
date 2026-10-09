@@ -19,6 +19,7 @@ class ProjectModel extends ChangeNotifier {
   double duration; // total composition duration in seconds
   double playheadTime; // current time in seconds
   bool isPlaying;
+  bool isSnappingEnabled;
   String? selectedLayerId;
   DateTime lastModified;
 
@@ -32,6 +33,7 @@ class ProjectModel extends ChangeNotifier {
     this.duration = 15.0,
     this.playheadTime = 0.0,
     this.isPlaying = false,
+    this.isSnappingEnabled = true,
     DateTime? lastModified,
   })  : id = id ?? "proj_${DateTime.now().millisecondsSinceEpoch}",
         lastModified = lastModified ?? DateTime.now();
@@ -168,6 +170,179 @@ class ProjectModel extends ChangeNotifier {
     selectedLayerId = rightPart.id;
     lastModified = DateTime.now();
     notifyListeners();
+  }
+
+  void toggleSnapping() {
+    isSnappingEnabled = !isSnappingEnabled;
+    notifyListeners();
+  }
+
+  void stepFrame(int frames) {
+    final frameDuration = 1.0 / (fps > 0 ? fps : 30);
+    setPlayheadTime(playheadTime + frames * frameDuration);
+  }
+
+  double snapTime(double targetTime, {double threshold = 0.12}) {
+    if (!isSnappingEnabled) return targetTime;
+
+    double closest = targetTime;
+    double minDiff = threshold;
+
+    // 1. Snap to start/end of project
+    if ((targetTime - 0.0).abs() < minDiff) {
+      closest = 0.0;
+      minDiff = (targetTime - 0.0).abs();
+    }
+    if ((targetTime - duration).abs() < minDiff) {
+      closest = duration;
+      minDiff = (targetTime - duration).abs();
+    }
+
+    // 2. Snap to all layer boundaries
+    for (final l in layers) {
+      final startDiff = (targetTime - l.startTime).abs();
+      if (startDiff < minDiff) {
+        minDiff = startDiff;
+        closest = l.startTime;
+      }
+      final endDiff = (targetTime - (l.startTime + l.duration)).abs();
+      if (endDiff < minDiff) {
+        minDiff = endDiff;
+        closest = l.startTime + l.duration;
+      }
+      // Snap to beat markers on audio tracks
+      for (final bm in l.beatMarkers) {
+        final bDiff = (targetTime - (l.startTime + bm)).abs();
+        if (bDiff < minDiff) {
+          minDiff = bDiff;
+          closest = l.startTime + bm;
+        }
+      }
+    }
+
+    return closest;
+  }
+
+  void freezeFrame() {
+    final layer = selectedLayer;
+    if (layer == null || layer.type != LayerType.video) return;
+
+    if (playheadTime <= layer.startTime || playheadTime >= layer.startTime + layer.duration) {
+      return;
+    }
+
+    final splitOffset = playheadTime - layer.startTime;
+    final remainingDuration = layer.duration - splitOffset;
+    const freezeDuration = 2.0;
+
+    // Truncate left part
+    layer.duration = splitOffset;
+
+    // Create 2.0s freeze segment (speed = 0.0)
+    final freezeLayer = LayerItem(
+      id: "freeze_${DateTime.now().millisecondsSinceEpoch}",
+      name: "${layer.name} [Freeze]",
+      type: LayerType.video,
+      startTime: playheadTime,
+      duration: freezeDuration,
+      trackIndex: layer.trackIndex,
+      is3D: layer.is3D,
+      speed: 0.0,
+      layerColor: const Color(0xFF00E5FF),
+      mediaPath: layer.mediaPath,
+    );
+
+    // Create right continuation shifted by freezeDuration
+    final rightPart = LayerItem(
+      id: "layer_${DateTime.now().millisecondsSinceEpoch + 1}",
+      name: "${layer.name} (Part 2)",
+      type: LayerType.video,
+      startTime: playheadTime + freezeDuration,
+      duration: remainingDuration,
+      trackIndex: layer.trackIndex,
+      is3D: layer.is3D,
+      speed: layer.speed,
+      layerColor: layer.layerColor,
+      mediaPath: layer.mediaPath,
+    );
+
+    layers.add(freezeLayer);
+    layers.add(rightPart);
+    selectedLayerId = freezeLayer.id;
+    duration += freezeDuration;
+    lastModified = DateTime.now();
+    notifyListeners();
+  }
+
+  void extractAudio() {
+    final layer = selectedLayer;
+    if (layer == null || layer.type != LayerType.video) return;
+
+    final audioLayer = LayerItem(
+      id: "audio_extracted_${DateTime.now().millisecondsSinceEpoch}",
+      name: "${layer.name} (Audio)",
+      type: LayerType.audio,
+      startTime: layer.startTime,
+      duration: layer.duration,
+      trackIndex: (layer.trackIndex + 1) % 4,
+      layerColor: const Color(0xFF00E676),
+      mediaPath: layer.mediaPath,
+    );
+
+    layers.add(audioLayer);
+    selectedLayerId = audioLayer.id;
+    lastModified = DateTime.now();
+    notifyListeners();
+  }
+
+  void reverseSelectedLayer() {
+    final layer = selectedLayer;
+    if (layer == null) return;
+    layer.isReversed = !layer.isReversed;
+    lastModified = DateTime.now();
+    notifyListeners();
+  }
+
+  void addBeatMarker(double time) {
+    // Add to selected layer if audio, or first audio layer
+    LayerItem? audioTarget = selectedLayer?.type == LayerType.audio ? selectedLayer : null;
+    audioTarget ??= layers.where((l) => l.type == LayerType.audio).firstOrNull;
+
+    if (audioTarget != null) {
+      final localTime = (time - audioTarget.startTime).clamp(0.0, audioTarget.duration);
+      if (!audioTarget.beatMarkers.any((b) => (b - localTime).abs() < 0.05)) {
+        audioTarget.beatMarkers.add(localTime);
+        audioTarget.beatMarkers.sort();
+        lastModified = DateTime.now();
+        notifyListeners();
+      }
+    }
+  }
+
+  void generateAutoBeats({bool fastBeats = false}) {
+    LayerItem? audioTarget = selectedLayer?.type == LayerType.audio ? selectedLayer : null;
+    audioTarget ??= layers.where((l) => l.type == LayerType.audio).firstOrNull;
+
+    if (audioTarget != null) {
+      audioTarget.beatMarkers.clear();
+      final interval = fastBeats ? 0.45 : 0.90; // Standard rhythm intervals
+      for (double t = interval; t < audioTarget.duration; t += interval) {
+        audioTarget.beatMarkers.add(t);
+      }
+      lastModified = DateTime.now();
+      notifyListeners();
+    }
+  }
+
+  void clearBeatMarkers() {
+    LayerItem? audioTarget = selectedLayer?.type == LayerType.audio ? selectedLayer : null;
+    audioTarget ??= layers.where((l) => l.type == LayerType.audio).firstOrNull;
+
+    if (audioTarget != null) {
+      audioTarget.beatMarkers.clear();
+      lastModified = DateTime.now();
+      notifyListeners();
+    }
   }
 
   void trimSelectedStart(double newStart) {
@@ -434,6 +609,24 @@ class ProjectManager extends ChangeNotifier {
           trackMatte: l.trackMatte,
           chromaKeyEnabled: l.chromaKeyEnabled,
           speed: l.speed,
+          lutPreset: l.lutPreset,
+          lutIntensity: l.lutIntensity,
+          exposure: l.exposure,
+          highlights: l.highlights,
+          shadows: l.shadows,
+          vibrance: l.vibrance,
+          tint: l.tint,
+          sharpen: l.sharpen,
+          shakeEnabled: l.shakeEnabled,
+          shakeFrequency: l.shakeFrequency,
+          shakeAmplitude: l.shakeAmplitude,
+          shakeRotation: l.shakeRotation,
+          shakePreset: l.shakePreset,
+          beatMarkers: List.from(l.beatMarkers),
+          isReversed: l.isReversed,
+          audioDuckingEnabled: l.audioDuckingEnabled,
+          audioDuckingAmount: l.audioDuckingAmount,
+          voiceEffectPreset: l.voiceEffectPreset,
         ));
       }
       projects.insert(0, clone);

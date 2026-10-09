@@ -58,6 +58,15 @@ int main() {
     assert(std::abs(camTrans.z - (-1000.0f)) < 1.0f);
     std::cout << "  Camera view space Z: " << camTrans.z << " (PASSED)" << std::endl;
 
+    std::cout << "[Test 4] Testing Procedural WiggleGenerator (AE Shake)..." << std::endl;
+    Vec3 shake1 = WiggleGenerator::evaluate(1.0f, 3.0f, 25.0f, 100);
+    Vec3 shake2 = WiggleGenerator::evaluate(1.0f, 3.0f, 25.0f, 100);
+    assert(shake1.x == shake2.x && shake1.y == shake2.y); // Deterministic
+    assert(std::abs(shake1.x) <= 25.0f * 1.05f); // Bounded
+    assert(std::abs(shake1.y) <= 25.0f * 1.05f);
+    std::cout << "  Procedural shake offset: (" << shake1.x << ", " << shake1.y << ") within bounds (PASSED)" << std::endl;
+
     std::cout << "\n>>> ALL C++ CORE ENGINE TESTS PASSED SUCCESSFULLY! <<<\n" << std::endl;
     return 0;
 }
+

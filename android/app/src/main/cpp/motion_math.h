@@ -181,4 +181,16 @@ struct Mat4 {
     }
 };
 
+// Procedural physics and dynamics shake solver matching After Effects wiggle(freq, amp)
+struct WiggleGenerator {
+    static Vec3 evaluate(float time, float freq, float amp, int seed = 42) {
+        float t = time * freq;
+        float x = std::sin(t * 1.0f + seed * 1.3f) * 0.6f + std::sin(t * 2.3f + seed * 0.7f) * 0.4f;
+        float y = std::cos(t * 1.1f + seed * 2.1f) * 0.6f + std::cos(t * 2.7f + seed * 1.1f) * 0.4f;
+        float z = std::sin(t * 0.9f + seed * 3.4f) * 0.5f;
+        return {x * amp, y * amp, z * amp};
+    }
+};
+
 } // namespace motionf
+

@@ -119,6 +119,21 @@ class ClipWidget extends StatelessWidget {
 
                           if (layer.transitionIn != TransitionType.none || layer.transitionOut != TransitionType.none)
                             _buildMiniBadge("TRANS", const Color(0xFF00E5FF)),
+
+                          if (layer.isReversed)
+                            _buildMiniBadge("REV", const Color(0xFFFF9100)),
+
+                          if (layer.lutPreset != "None")
+                            _buildMiniBadge(layer.lutPreset, const Color(0xFF00E5FF)),
+
+                          if (layer.blendMode != LayerBlendMode.normal)
+                            _buildMiniBadge("BLEND", const Color(0xFFFF4081)),
+
+                          if (layer.shakeEnabled)
+                            _buildMiniBadge("SHAKE", const Color(0xFFFF9100)),
+
+                          if (layer.audioDuckingEnabled)
+                            _buildMiniBadge("DUCK", const Color(0xFF00E5FF)),
                         ],
                       ),
                     ),
@@ -144,6 +159,28 @@ class ClipWidget extends StatelessWidget {
                         ),
                       );
                     }),
+
+                    // 4. Glowing Gold Beat Markers (CapCut Match Cut Beats)
+                    ...layer.beatMarkers.map((bmTime) {
+                      final bmOffset = bmTime * pixelsPerSecond;
+                      if (bmOffset < 0 || bmOffset > width) return const SizedBox.shrink();
+
+                      return Positioned(
+                        left: bmOffset - 3.5,
+                        bottom: 3,
+                        child: Container(
+                          width: 7,
+                          height: 7,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFFFD600),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(color: Color(0xFFFFD600), blurRadius: 4, spreadRadius: 1),
+                            ],
+                          ),
+                        ),
+                      );
+                    }),
                   ],
                 ),
               ),
@@ -162,7 +199,7 @@ class ClipWidget extends StatelessWidget {
                 behavior: HitTestBehavior.opaque,
                 onHorizontalDragUpdate: (details) {
                   final deltaTime = details.primaryDelta! / pixelsPerSecond;
-                  project.trimSelectedStart(layer.startTime + deltaTime);
+                  project.trimSelectedStart(project.snapTime(layer.startTime + deltaTime));
                 },
                 child: Center(
                   child: Container(
@@ -191,7 +228,7 @@ class ClipWidget extends StatelessWidget {
                 behavior: HitTestBehavior.opaque,
                 onHorizontalDragUpdate: (details) {
                   final deltaTime = details.primaryDelta! / pixelsPerSecond;
-                  project.trimSelectedEnd(layer.startTime + layer.duration + deltaTime);
+                  project.trimSelectedEnd(project.snapTime(layer.startTime + layer.duration + deltaTime));
                 },
                 child: Center(
                   child: Container(
