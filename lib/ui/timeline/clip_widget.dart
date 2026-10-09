@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../models/layer.dart';
 import '../../models/project.dart';
@@ -22,6 +23,14 @@ class ClipWidget extends StatelessWidget {
 
     final keyframeTimes = layer.getAllKeyframeTimes();
 
+    final hasEffects = layer.motionBlurEnabled ||
+        layer.chromaticAberration > 0 ||
+        layer.vignette > 0 ||
+        layer.brightness != 0 ||
+        layer.contrast != 1.0 ||
+        layer.saturation != 1.0 ||
+        layer.temperature != 0;
+
     return Positioned(
       left: left,
       top: 4,
@@ -38,31 +47,69 @@ class ClipWidget extends StatelessWidget {
               width: isSelected ? 2.0 : 1.0,
             ),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 8),
+          clipBehavior: Clip.antiAlias,
           child: Stack(
             alignment: Alignment.centerLeft,
             children: [
-              // Clip Label
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _getLayerIcon(layer.type),
-                  const SizedBox(width: 4),
-                  Flexible(
-                    child: Text(
-                      layer.name,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+              // 1. Procedural Background Texture: Waveform for Audio, Filmstrip for Video
+              if (layer.type == LayerType.audio)
+                Positioned.fill(
+                  child: CustomPaint(
+                    painter: AudioWaveformPainter(
+                      color: Colors.white.withOpacity(0.35),
+                      activeColor: const Color(0xFF00E5FF).withOpacity(0.6),
+                      progress: ((project.playheadTime - layer.startTime) / layer.duration).clamp(0.0, 1.0),
                     ),
                   ),
-                ],
+                ),
+
+              if (layer.type == LayerType.video)
+                Positioned.fill(
+                  child: CustomPaint(
+                    painter: FilmstripPainter(
+                      color: Colors.black.withOpacity(0.2),
+                      sprocketColor: Colors.white.withOpacity(0.15),
+                    ),
+                  ),
+                ),
+
+              // 2. Clip Label & Feature Badges
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Row(
+                  children: [
+                    _getLayerIcon(layer.type),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        layer.name,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+
+                    // Badges for Active Advanced Features
+                    if (layer.is3D)
+                      _buildMiniBadge("3D", const Color(0xFFD500F9)),
+
+                    if (layer.maskType != MaskType.none)
+                      _buildMiniBadge("MASK", const Color(0xFF00E5FF)),
+
+                    if (layer.trackMatte != TrackMatteType.none)
+                      _buildMiniBadge("MATTE", const Color(0xFFFFD600)),
+
+                    if (hasEffects)
+                      _buildMiniBadge("FX", const Color(0xFFFF4081)),
+                  ],
+                ),
               ),
 
-              // Visual Keyframe Diamond Dots (AE / CapCut signature feature)
+              // 3. Visual Keyframe Diamond Dots (After Effects / CapCut signature feature)
               ...keyframeTimes.map((kfTime) {
                 final kfOffset = (kfTime - layer.startTime) * pixelsPerSecond;
                 if (kfOffset < 0 || kfOffset > width) return const SizedBox.shrink();
@@ -90,6 +137,27 @@ class ClipWidget extends StatelessWidget {
     );
   }
 
+  Widget _buildMiniBadge(String text, Color color) {
+    return Container(
+      margin: const EdgeInsets.only(right: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.25),
+        border: Border.all(color: color, width: 0.8),
+        borderRadius: BorderRadius.circular(3),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: color,
+          fontSize: 8,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+
   Widget _getLayerIcon(LayerType type) {
     switch (type) {
       case LayerType.video:
@@ -106,4 +174,103 @@ class ClipWidget extends StatelessWidget {
         return const Icon(Icons.tune, size: 14, color: Colors.white);
     }
   }
+}
+
+/// Procedural Audio Waveform Painter for CapCut-style audio clips
+class AudioWaveformPainter extends CustomPainter {
+  final Color color;
+  final Color activeColor;
+  final double progress;
+
+  AudioWaveformPainter({
+    required this.color,
+    required this.activeColor,
+    required this.progress,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final barWidth = 2.0;
+    final spacing = 1.5;
+    final totalWidth = barWidth + spacing;
+    final numBars = (size.width / totalWidth).floor();
+    final midY = size.height / 2;
+
+    final basePaint = Paint()..color = color;
+    final activePaint = Paint()..color = activeColor;
+
+    for (int i = 0; i < numBars; i++) {
+      final x = i * totalWidth;
+      // Deterministic synthetic waveform pattern
+      final s1 = math.sin(i * 0.22);
+      final s2 = math.cos(i * 0.08);
+      final s3 = math.sin(i * 0.5);
+      final normAmp = (s1.abs() * 0.5 + s2.abs() * 0.3 + s3.abs() * 0.2).clamp(0.15, 0.95);
+      final barHeight = (size.height * 0.75) * normAmp;
+
+      final isPastPlayhead = (x / size.width) <= progress;
+      final paint = isPastPlayhead ? activePaint : basePaint;
+
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromCenter(center: Offset(x + barWidth / 2, midY), width: barWidth, height: barHeight),
+          const Radius.circular(1),
+        ),
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant AudioWaveformPainter oldDelegate) {
+    return oldDelegate.progress != progress || oldDelegate.color != color;
+  }
+}
+
+/// Procedural Filmstrip Painter for Video clips with frame dividers and sprockets
+class FilmstripPainter extends CustomPainter {
+  final Color color;
+  final Color sprocketColor;
+
+  FilmstripPainter({
+    required this.color,
+    required this.sprocketColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final frameWidth = 48.0;
+    final numFrames = (size.width / frameWidth).ceil();
+
+    final linePaint = Paint()
+      ..color = color
+      ..strokeWidth = 1.0;
+
+    final sprocketPaint = Paint()..color = sprocketColor;
+
+    // Frame vertical divider lines
+    for (int i = 1; i < numFrames; i++) {
+      final x = i * frameWidth;
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), linePaint);
+    }
+
+    // Top and bottom subtle sprocket dots
+    final numSprockets = (size.width / 14.0).floor();
+    for (int i = 0; i < numSprockets; i++) {
+      final x = i * 14.0 + 4;
+      // Top sprocket
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(Rect.fromLTWH(x, 2, 5, 3), const Radius.circular(1)),
+        sprocketPaint,
+      );
+      // Bottom sprocket
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(Rect.fromLTWH(x, size.height - 5, 5, 3), const Radius.circular(1)),
+        sprocketPaint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant FilmstripPainter oldDelegate) => false;
 }

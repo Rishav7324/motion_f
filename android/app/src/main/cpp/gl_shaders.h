@@ -143,4 +143,162 @@ void main() {
 }
 )glsl";
 
+// Track Matte (Alpha & Luma Matte like After Effects)
+inline const char* FRAGMENT_SHADER_TRACK_MATTE = R"glsl(#version 300 es
+precision mediump float;
+
+in vec2 vTexCoord;
+uniform sampler2D uSourceTexture;
+uniform sampler2D uMatteTexture;
+uniform int uMatteType; // 1: Alpha, 2: Alpha Inverted, 3: Luma, 4: Luma Inverted
+
+out vec4 fragColor;
+
+void main() {
+    vec4 src = texture(uSourceTexture, vTexCoord);
+    vec4 matte = texture(uMatteTexture, vTexCoord);
+
+    float matteFactor = 1.0;
+    if (uMatteType == 1) {
+        matteFactor = matte.a;
+    } else if (uMatteType == 2) {
+        matteFactor = 1.0 - matte.a;
+    } else if (uMatteType == 3) {
+        matteFactor = dot(matte.rgb, vec3(0.299, 0.587, 0.114));
+    } else if (uMatteType == 4) {
+        matteFactor = 1.0 - dot(matte.rgb, vec3(0.299, 0.587, 0.114));
+    }
+
+    fragColor = vec4(src.rgb, src.a * matteFactor);
+}
+)glsl";
+
+// Vector Mask (Rectangular & Elliptical Mask with Feathering)
+inline const char* FRAGMENT_SHADER_VECTOR_MASK = R"glsl(#version 300 es
+precision mediump float;
+
+in vec2 vTexCoord;
+uniform sampler2D uTexture;
+uniform int uMaskType;       // 1: Rectangle, 2: Ellipse, 3: Linear
+uniform vec2 uMaskCenter;    // Normalized (0..1)
+uniform vec2 uMaskSize;      // Normalized half-extents
+uniform float uFeather;      // Feather radius (0.001..0.2)
+uniform int uInvert;         // 1 if inverted
+
+out vec4 fragColor;
+
+void main() {
+    vec4 col = texture(uTexture, vTexCoord);
+    vec2 d = abs(vTexCoord - uMaskCenter);
+    float maskVal = 1.0;
+
+    if (uMaskType == 1) {
+        // Rectangle Mask
+        vec2 edgeDist = d - uMaskSize;
+        float dist = max(edgeDist.x, edgeDist.y);
+        maskVal = 1.0 - smoothstep(-uFeather, 0.0, dist);
+    } else if (uMaskType == 2) {
+        // Ellipse Mask
+        vec2 norm = d / max(uMaskSize, vec2(1e-4));
+        float dist = length(norm) - 1.0;
+        maskVal = 1.0 - smoothstep(-uFeather, 0.0, dist);
+    } else if (uMaskType == 3) {
+        // Linear Gradient Mask
+        float dist = vTexCoord.x - uMaskCenter.x;
+        maskVal = smoothstep(-uFeather, uFeather, dist);
+    }
+
+    if (uInvert == 1) {
+        maskVal = 1.0 - maskVal;
+    }
+
+    fragColor = vec4(col.rgb, col.a * maskVal);
+}
+)glsl";
+
+// Color Grading, Chromatic Aberration & Glow Filter
+inline const char* FRAGMENT_SHADER_COLOR_AND_EFFECTS = R"glsl(#version 300 es
+precision mediump float;
+
+in vec2 vTexCoord;
+uniform sampler2D uTexture;
+
+// Effects Uniforms
+uniform float uChromaticAberration; // 0.0 to 0.05
+uniform float uBrightness;           // -1.0 to 1.0 (default 0.0)
+uniform float uContrast;             // 0.0 to 2.0 (default 1.0)
+uniform float uSaturation;           // 0.0 to 2.0 (default 1.0)
+uniform float uTemperature;          // -1.0 (cold) to 1.0 (warm)
+uniform float uVignette;             // 0.0 to 1.0 (default 0.0)
+
+out vec4 fragColor;
+
+void main() {
+    vec2 p = vTexCoord;
+
+    // 1. Chromatic Aberration (RGB Channel Split)
+    float r = texture(uTexture, p + vec2(uChromaticAberration, 0.0)).r;
+    float g = texture(uTexture, p).g;
+    float b = texture(uTexture, p - vec2(uChromaticAberration, 0.0)).b;
+    float a = texture(uTexture, p).a;
+    vec3 color = vec3(r, g, b);
+
+    // 2. Brightness & Contrast
+    color = (color - 0.5) * uContrast + 0.5 + uBrightness;
+
+    // 3. Saturation
+    float luma = dot(color, vec3(0.299, 0.587, 0.114));
+    color = mix(vec3(luma), color, uSaturation);
+
+    // 4. Color Temperature (Warm / Cold shift)
+    if (uTemperature > 0.0) {
+        color.r += uTemperature * 0.1;
+        color.b -= uTemperature * 0.05;
+    } else {
+        color.b -= uTemperature * 0.1;
+        color.r += uTemperature * 0.05;
+    }
+
+    // 5. Vignette (Falloff towards screen borders)
+    float dist = distance(p, vec2(0.5));
+    float vig = smoothstep(0.8, 0.8 - uVignette * 0.45, dist * 1.414);
+    color *= vig;
+
+    fragColor = vec4(clamp(color, 0.0, 1.0), a);
+}
+)glsl";
+
+// Velocity-Based Directional Motion Blur
+inline const char* FRAGMENT_SHADER_MOTION_BLUR = R"glsl(#version 300 es
+precision mediump float;
+
+in vec2 vTexCoord;
+uniform sampler2D uTexture;
+uniform vec2 uVelocity; // Calculated from Bezier derivative (dx, dy)
+uniform int uSamples;   // e.g. 8 or 16 samples
+
+out vec4 fragColor;
+
+void main() {
+    if (length(uVelocity) < 1e-4) {
+        fragColor = texture(uTexture, vTexCoord);
+        return;
+    }
+
+    vec4 accum = vec4(0.0);
+    float totalWeight = 0.0;
+    int samples = clamp(uSamples, 1, 16);
+
+    for (int i = 0; i < 16; i++) {
+        if (i >= samples) break;
+        float t = float(i) / float(samples - 1) - 0.5;
+        vec2 offset = uVelocity * t;
+        accum += texture(uTexture, vTexCoord + offset);
+        totalWeight += 1.0;
+    }
+
+    fragColor = accum / totalWeight;
+}
+)glsl";
+
 } // namespace motionf

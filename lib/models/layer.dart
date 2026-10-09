@@ -19,6 +19,21 @@ enum LayerBlendMode {
   softLight,
 }
 
+enum TrackMatteType {
+  none,
+  alpha,
+  alphaInverted,
+  luma,
+  lumaInverted,
+}
+
+enum MaskType {
+  none,
+  rectangle,
+  ellipse,
+  linear,
+}
+
 class LayerItem {
   final String id;
   String name;
@@ -33,6 +48,29 @@ class LayerItem {
   bool isVisible;
   bool isLocked;
   LayerBlendMode blendMode;
+
+  // Track Matte (After Effects TrkMat)
+  TrackMatteType trackMatte;
+  String? targetMatteLayerId;
+
+  // Vector Masks
+  MaskType maskType;
+  double maskCenterX;
+  double maskCenterY;
+  double maskSizeX;
+  double maskSizeY;
+  double maskFeather;
+  bool isMaskInverted;
+
+  // Effects & Color Grading
+  bool motionBlurEnabled;
+  int motionBlurSamples;
+  double chromaticAberration; // 0.0 to 0.05
+  double brightness;          // -1.0 to 1.0 (default 0.0)
+  double contrast;            // 0.0 to 2.0 (default 1.0)
+  double saturation;          // 0.0 to 2.0 (default 1.0)
+  double temperature;         // -1.0 to 1.0 (default 0.0)
+  double vignette;            // 0.0 to 1.0 (default 0.0)
 
   // Animatable Transform Properties
   final AnimatableProperty posX;
@@ -73,6 +111,23 @@ class LayerItem {
     this.isVisible = true,
     this.isLocked = false,
     this.blendMode = LayerBlendMode.normal,
+    this.trackMatte = TrackMatteType.none,
+    this.targetMatteLayerId,
+    this.maskType = MaskType.none,
+    this.maskCenterX = 0.5,
+    this.maskCenterY = 0.5,
+    this.maskSizeX = 0.35,
+    this.maskSizeY = 0.35,
+    this.maskFeather = 0.05,
+    this.isMaskInverted = false,
+    this.motionBlurEnabled = false,
+    this.motionBlurSamples = 8,
+    this.chromaticAberration = 0.0,
+    this.brightness = 0.0,
+    this.contrast = 1.0,
+    this.saturation = 1.0,
+    this.temperature = 0.0,
+    this.vignette = 0.0,
     this.mediaPath,
     this.textContent = "MotionF Text",
     Color? layerColor,

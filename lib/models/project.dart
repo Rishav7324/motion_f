@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'layer.dart';
 import 'keyframe.dart';
 
@@ -146,6 +147,45 @@ class ProjectModel extends ChangeNotifier {
     layers.add(newLayer);
     selectedLayerId = newLayer.id;
     notifyListeners();
+  }
+
+  Future<void> importMediaFile() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['mp4', 'mov', 'mkv', 'avi', 'mp3', 'wav', 'aac', 'png', 'jpg', 'jpeg'],
+      );
+
+      if (result != null && result.files.single.path != null) {
+        final path = result.files.single.path!;
+        final name = result.files.single.name;
+        final ext = name.split('.').last.toLowerCase();
+
+        LayerType lType = LayerType.video;
+        int track = 0;
+        if (['mp3', 'wav', 'aac', 'm4a'].contains(ext)) {
+          lType = LayerType.audio;
+          track = 1;
+        } else if (['png', 'jpg', 'jpeg', 'webp'].contains(ext)) {
+          lType = LayerType.video;
+          track = 0;
+        }
+
+        final newLayer = LayerItem(
+          id: "media_${DateTime.now().millisecondsSinceEpoch}",
+          name: name,
+          type: lType,
+          mediaPath: path,
+          startTime: playheadTime,
+          duration: 8.0,
+          trackIndex: track,
+        );
+
+        addLayer(newLayer);
+      }
+    } catch (e) {
+      debugPrint("File picking cancelled or error: $e");
+    }
   }
 
   void _initDemoLayers() {

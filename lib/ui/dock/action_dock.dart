@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../../models/project.dart';
 import '../../models/layer.dart';
 import 'layer_properties_sheet.dart';
+import '../masks/mask_editor_sheet.dart';
+import '../effects/effects_sheet.dart';
 
 class ActionDock extends StatelessWidget {
   const ActionDock({super.key});
@@ -30,6 +32,22 @@ class ActionDock extends StatelessWidget {
           icon: Icons.call_split,
           label: "Split",
           onTap: () => project.splitSelectedLayer(),
+        ),
+        _buildToolBtn(
+          icon: Icons.masks,
+          label: "Masks",
+          color: layer.maskType != MaskType.none || layer.trackMatte != TrackMatteType.none
+              ? const Color(0xFF00E5FF)
+              : Colors.white,
+          onTap: () => MaskEditorSheet.show(context, layer, project),
+        ),
+        _buildToolBtn(
+          icon: Icons.auto_fix_high,
+          label: "Effects",
+          color: (layer.motionBlurEnabled || layer.chromaticAberration > 0 || layer.vignette > 0 || layer.brightness != 0)
+              ? const Color(0xFFD500F9)
+              : Colors.white,
+          onTap: () => EffectsSheet.show(context, layer, project),
         ),
         _buildToolBtn(
           icon: Icons.tune,
@@ -60,6 +78,21 @@ class ActionDock extends StatelessWidget {
               parentId: layer.parentId,
               textContent: layer.textContent,
               layerColor: layer.layerColor,
+              maskType: layer.maskType,
+              maskSizeX: layer.maskSizeX,
+              maskSizeY: layer.maskSizeY,
+              maskFeather: layer.maskFeather,
+              isMaskInverted: layer.isMaskInverted,
+              trackMatte: layer.trackMatte,
+              targetMatteLayerId: layer.targetMatteLayerId,
+              motionBlurEnabled: layer.motionBlurEnabled,
+              motionBlurSamples: layer.motionBlurSamples,
+              chromaticAberration: layer.chromaticAberration,
+              brightness: layer.brightness,
+              contrast: layer.contrast,
+              saturation: layer.saturation,
+              temperature: layer.temperature,
+              vignette: layer.vignette,
             );
             project.addLayer(clone);
           },
@@ -84,6 +117,12 @@ class ActionDock extends StatelessWidget {
       scrollDirection: Axis.horizontal,
       children: [
         _buildToolBtn(
+          icon: Icons.add_photo_alternate,
+          label: "+ Import",
+          color: const Color(0xFF00E5FF),
+          onTap: () => project.importMediaFile(),
+        ),
+        _buildToolBtn(
           icon: Icons.video_call,
           label: "+ Video",
           onTap: () {
@@ -94,6 +133,22 @@ class ActionDock extends StatelessWidget {
               startTime: project.playheadTime,
               duration: 5.0,
               trackIndex: 0,
+            ));
+          },
+        ),
+        _buildToolBtn(
+          icon: Icons.audiotrack,
+          label: "+ Audio",
+          color: const Color(0xFF00E676),
+          onTap: () {
+            project.addLayer(LayerItem(
+              id: "audio_${DateTime.now().millisecondsSinceEpoch}",
+              name: "Audio Track ${project.layers.where((l) => l.type == LayerType.audio).length + 1}",
+              type: LayerType.audio,
+              startTime: project.playheadTime,
+              duration: 6.0,
+              trackIndex: 1,
+              layerColor: const Color(0xFF00E676),
             ));
           },
         ),

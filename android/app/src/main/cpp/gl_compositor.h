@@ -25,6 +25,10 @@ public:
     GLuint blendProgram{0};
     GLuint transitionProgram{0};
     GLuint chromaProgram{0};
+    GLuint trackMatteProgram{0};
+    GLuint vectorMaskProgram{0};
+    GLuint effectsProgram{0};
+    GLuint motionBlurProgram{0};
     GLuint quadVbo{0};
 
     bool initialized{false};
@@ -98,6 +102,10 @@ public:
         if (blendProgram) glDeleteProgram(blendProgram);
         if (transitionProgram) glDeleteProgram(transitionProgram);
         if (chromaProgram) glDeleteProgram(chromaProgram);
+        if (trackMatteProgram) glDeleteProgram(trackMatteProgram);
+        if (vectorMaskProgram) glDeleteProgram(vectorMaskProgram);
+        if (effectsProgram) glDeleteProgram(effectsProgram);
+        if (motionBlurProgram) glDeleteProgram(motionBlurProgram);
         if (quadVbo) glDeleteBuffers(1, &quadVbo);
         initialized = false;
     }
@@ -160,6 +168,10 @@ private:
         blendProgram = createProgram(VERTEX_SHADER_MVP, FRAGMENT_SHADER_BLEND);
         transitionProgram = createProgram(VERTEX_SHADER_MVP, FRAGMENT_SHADER_TRANSITION);
         chromaProgram = createProgram(VERTEX_SHADER_MVP, FRAGMENT_SHADER_CHROMA_KEY);
+        trackMatteProgram = createProgram(VERTEX_SHADER_MVP, FRAGMENT_SHADER_TRACK_MATTE);
+        vectorMaskProgram = createProgram(VERTEX_SHADER_MVP, FRAGMENT_SHADER_VECTOR_MASK);
+        effectsProgram = createProgram(VERTEX_SHADER_MVP, FRAGMENT_SHADER_COLOR_AND_EFFECTS);
+        motionBlurProgram = createProgram(VERTEX_SHADER_MVP, FRAGMENT_SHADER_MOTION_BLUR);
     }
 
     GLuint createProgram(const char* vertSrc, const char* fragSrc) {
