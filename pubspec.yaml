@@ -1,0 +1,29 @@
+name: motion_f
+description: "MotionF - Next-Generation Mobile Motion Graphics & Video Compositor combining CapCut UI/UX with After Effects 3D Camera, Null Layer, Bezier Curve Editor, and Keyframe Engine."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+  flutter: ">=3.24.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  vector_math: ^2.1.4
+  provider: ^6.1.2
+  ffi: ^2.1.3
+  path_provider: ^2.1.5
+  file_picker: ^8.1.7
+  intl: ^0.19.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/shaders/
