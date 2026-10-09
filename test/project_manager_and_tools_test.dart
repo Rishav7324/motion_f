@@ -4,9 +4,9 @@ import 'package:motion_f/models/layer.dart';
 
 void main() {
   group('ProjectManager & Multi-Project Tests', () {
-    test('ProjectManager initializes with pre-populated demo projects', () {
+    test('ProjectManager initializes with clean empty project state', () {
       final manager = ProjectManager();
-      expect(manager.projects.length, greaterThanOrEqualTo(3));
+      expect(manager.projects, isEmpty);
       expect(manager.activeProject, isNotNull);
     });
 
