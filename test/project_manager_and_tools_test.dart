@@ -50,6 +50,20 @@ void main() {
       expect(p3.canvasWidth, 2560);
       expect(p3.canvasHeight, 1080);
     });
+
+    test('setParent sets and clears parentId on layer', () {
+      final project = ProjectModel();
+      final l1 = LayerItem(id: "parent_1", name: "Null Parent", type: LayerType.nullObject);
+      final l2 = LayerItem(id: "child_1", name: "Text Child", type: LayerType.text);
+      project.addLayer(l1);
+      project.addLayer(l2);
+
+      project.setParent("child_1", "parent_1");
+      expect(l2.parentId, "parent_1");
+
+      project.setParent("child_1", null);
+      expect(l2.parentId, isNull);
+    });
   });
 
   group('Chroma Key, Speed Ramping, and Trimming Tests', () {

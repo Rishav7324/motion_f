@@ -116,6 +116,15 @@ class ProjectModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setParent(String layerId, String? parentId) {
+    try {
+      final layer = layers.firstWhere((l) => l.id == layerId);
+      layer.parentId = parentId;
+      lastModified = DateTime.now();
+      notifyListeners();
+    } catch (_) {}
+  }
+
   void splitSelectedLayer() {
     final layer = selectedLayer;
     if (layer == null) return;
