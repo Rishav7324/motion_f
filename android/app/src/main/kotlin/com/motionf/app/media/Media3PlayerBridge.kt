@@ -21,7 +21,7 @@ class Media3PlayerBridge(private val context: Context) {
             repeatMode = Player.REPEAT_MODE_OFF
             addListener(object : Player.Listener {
                 override fun onIsPlayingChanged(playing: Boolean) {
-                    isPlaying = playing
+                    this@Media3PlayerBridge.isPlaying = playing
                 }
             })
         }
