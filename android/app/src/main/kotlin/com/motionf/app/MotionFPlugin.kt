@@ -3,8 +3,10 @@ package com.motionf.app
 import android.app.Activity
 import android.graphics.SurfaceTexture
 import android.util.Log
-import com.arthenica.ffmpegkit.FFmpegKit
-import com.arthenica.ffmpegkit.ReturnCode
+import androidx.media3.transformer.Transformer
+import androidx.media3.transformer.Composition
+import androidx.media3.transformer.EditedMediaItem
+import androidx.media3.common.MediaItem
 import com.motionf.app.media.EglSurfaceManager
 import com.motionf.app.media.Media3PlayerBridge
 import io.flutter.embedding.engine.FlutterEngine
@@ -104,21 +106,19 @@ class MotionFPlugin(
                 result.success(true)
             }
 
-            "exportVideoFFmpeg" -> {
-                val command = call.argument<String>("command") ?: ""
-                FFmpegKit.executeAsync(command) { session ->
-                    val returnCode = session.returnCode
-                    if (ReturnCode.isSuccess(returnCode)) {
-                        activity.runOnUiThread {
-                            methodChannel?.invokeMethod("onExportProgress", mapOf("status" to "success"))
-                        }
-                    } else {
-                        activity.runOnUiThread {
-                            methodChannel?.invokeMethod("onExportProgress", mapOf("status" to "failed"))
-                        }
-                    }
+            "exportVideo" -> {
+                val inputPath = call.argument<String>("inputPath") ?: ""
+                val outputPath = call.argument<String>("outputPath") ?: ""
+                try {
+                    val transformer = Transformer.Builder(activity).build()
+                    val mediaItem = MediaItem.fromUri(inputPath)
+                    val editedMediaItem = EditedMediaItem.Builder(mediaItem).build()
+                    transformer.start(editedMediaItem, outputPath)
+                    result.success(true)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Media3 export failed", e)
+                    result.error("EXPORT_ERROR", e.message, null)
                 }
-                result.success(true)
             }
 
             else -> result.notImplemented()
