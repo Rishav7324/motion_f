@@ -110,14 +110,74 @@ class PreviewViewport extends StatelessWidget {
       canvasAspect: canvasSize.width / canvasSize.height,
     );
 
-    final opacity = layer.opacity.evaluate(time).clamp(0.0, 1.0);
+    double baseOpacity = layer.opacity.evaluate(time).clamp(0.0, 1.0);
+    double transitionOpacity = 1.0;
+    double transitionScale = 1.0;
+    Offset transitionOffset = Offset.zero;
+
+    // 1. In-Transition calculation
+    final layerTime = time - layer.startTime;
+    if (layer.transitionIn != TransitionType.none && layerTime < layer.transitionInDuration && layer.transitionInDuration > 0) {
+      final t = (layerTime / layer.transitionInDuration).clamp(0.0, 1.0);
+      switch (layer.transitionIn) {
+        case TransitionType.fade:
+        case TransitionType.dissolve:
+          transitionOpacity *= t;
+          break;
+        case TransitionType.crossZoom:
+          transitionScale *= (0.4 + 0.6 * t);
+          transitionOpacity *= t;
+          break;
+        case TransitionType.wipeLeft:
+          transitionOffset += Offset((1.0 - t) * 150, 0);
+          break;
+        case TransitionType.wipeRight:
+          transitionOffset += Offset(-(1.0 - t) * 150, 0);
+          break;
+        default:
+          break;
+      }
+    }
+
+    // 2. Out-Transition calculation
+    final remainingTime = (layer.startTime + layer.duration) - time;
+    if (layer.transitionOut != TransitionType.none && remainingTime < layer.transitionOutDuration && layer.transitionOutDuration > 0) {
+      final t = (remainingTime / layer.transitionOutDuration).clamp(0.0, 1.0);
+      switch (layer.transitionOut) {
+        case TransitionType.fade:
+        case TransitionType.dissolve:
+          transitionOpacity *= t;
+          break;
+        case TransitionType.crossZoom:
+          transitionScale *= (0.4 + 0.6 * t);
+          transitionOpacity *= t;
+          break;
+        case TransitionType.wipeLeft:
+          transitionOffset += Offset(-(1.0 - t) * 150, 0);
+          break;
+        case TransitionType.wipeRight:
+          transitionOffset += Offset((1.0 - t) * 150, 0);
+          break;
+        default:
+          break;
+      }
+    }
+
+    final finalOpacity = (baseOpacity * transitionOpacity).clamp(0.0, 1.0);
 
     Widget content = _renderLayerContent(layer);
     content = _applyEffectsAndMask(layer, content);
 
+    if (transitionOffset != Offset.zero) {
+      content = Transform.translate(offset: transitionOffset, child: content);
+    }
+    if (transitionScale != 1.0) {
+      content = Transform.scale(scale: transitionScale, child: content);
+    }
+
     return Positioned.fill(
       child: Opacity(
-        opacity: opacity,
+        opacity: finalOpacity,
         child: Center(
           child: Transform(
             alignment: Alignment.center,
@@ -182,18 +242,44 @@ class PreviewViewport extends StatelessWidget {
       case LayerType.text:
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Text(
-            layer.textContent,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 28,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 2.0,
-              shadows: [
-                Shadow(color: Colors.black, blurRadius: 10, offset: Offset(2, 2)),
-                Shadow(color: Color(0xFF00E5FF), blurRadius: 15),
-              ],
-            ),
+          decoration: layer.hasTextBackground
+              ? BoxDecoration(
+                  color: layer.textBackgroundColor,
+                  borderRadius: BorderRadius.circular(6),
+                )
+              : null,
+          child: Stack(
+            children: [
+              if (layer.hasTextStroke)
+                Text(
+                  layer.textContent,
+                  style: TextStyle(
+                    fontSize: layer.fontSize,
+                    letterSpacing: layer.textLetterSpacing,
+                    fontFamily: layer.textFontFamily,
+                    foreground: Paint()
+                      ..style = PaintingStyle.stroke
+                      ..strokeWidth = layer.textStrokeWidth
+                      ..color = layer.textStrokeColor,
+                  ),
+                ),
+              Text(
+                layer.textContent,
+                style: TextStyle(
+                  color: layer.textColor,
+                  fontSize: layer.fontSize,
+                  letterSpacing: layer.textLetterSpacing,
+                  fontFamily: layer.textFontFamily,
+                  fontWeight: FontWeight.w900,
+                  shadows: layer.hasTextShadow
+                      ? [
+                          const Shadow(color: Colors.black, blurRadius: 10, offset: Offset(2, 2)),
+                          Shadow(color: layer.textShadowColor, blurRadius: layer.textShadowBlur),
+                        ]
+                      : null,
+                ),
+              ),
+            ],
           ),
         );
 

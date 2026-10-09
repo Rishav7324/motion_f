@@ -34,6 +34,19 @@ enum MaskType {
   linear,
 }
 
+enum TransitionType {
+  none,
+  fade,
+  dissolve,
+  crossZoom,
+  glitch,
+  flashWhite,
+  flashBlack,
+  wipeLeft,
+  wipeRight,
+  whipPan,
+}
+
 class LayerItem {
   final String id;
   String name;
@@ -71,6 +84,26 @@ class LayerItem {
   double saturation;          // 0.0 to 2.0 (default 1.0)
   double temperature;         // -1.0 to 1.0 (default 0.0)
   double vignette;            // 0.0 to 1.0 (default 0.0)
+
+  // CapCut Transitions (In / Out)
+  TransitionType transitionIn;
+  double transitionInDuration;
+  TransitionType transitionOut;
+  double transitionOutDuration;
+
+  // Typography & Text Styling (CapCut / After Effects style)
+  double fontSize;
+  Color textColor;
+  bool hasTextStroke;
+  Color textStrokeColor;
+  double textStrokeWidth;
+  bool hasTextShadow;
+  Color textShadowColor;
+  double textShadowBlur;
+  bool hasTextBackground;
+  Color textBackgroundColor;
+  double textLetterSpacing;
+  String textFontFamily;
 
   // Animatable Transform Properties
   final AnimatableProperty posX;
@@ -128,6 +161,22 @@ class LayerItem {
     this.saturation = 1.0,
     this.temperature = 0.0,
     this.vignette = 0.0,
+    this.transitionIn = TransitionType.none,
+    this.transitionInDuration = 0.5,
+    this.transitionOut = TransitionType.none,
+    this.transitionOutDuration = 0.5,
+    this.fontSize = 28.0,
+    this.textColor = Colors.white,
+    this.hasTextStroke = false,
+    this.textStrokeColor = Colors.black,
+    this.textStrokeWidth = 2.0,
+    this.hasTextShadow = true,
+    this.textShadowColor = const Color(0xFF00E5FF),
+    this.textShadowBlur = 15.0,
+    this.hasTextBackground = false,
+    this.textBackgroundColor = const Color(0x88000000),
+    this.textLetterSpacing = 2.0,
+    this.textFontFamily = "sans-serif",
     this.mediaPath,
     this.textContent = "MotionF Text",
     Color? layerColor,

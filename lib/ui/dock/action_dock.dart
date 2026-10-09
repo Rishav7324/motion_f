@@ -5,6 +5,8 @@ import '../../models/layer.dart';
 import 'layer_properties_sheet.dart';
 import '../masks/mask_editor_sheet.dart';
 import '../effects/effects_sheet.dart';
+import '../transitions/transition_sheet.dart';
+import '../text/text_styling_sheet.dart';
 
 class ActionDock extends StatelessWidget {
   const ActionDock({super.key});
@@ -49,6 +51,21 @@ class ActionDock extends StatelessWidget {
               : Colors.white,
           onTap: () => EffectsSheet.show(context, layer, project),
         ),
+        _buildToolBtn(
+          icon: Icons.auto_awesome_motion,
+          label: "Transition",
+          color: (layer.transitionIn != TransitionType.none || layer.transitionOut != TransitionType.none)
+              ? const Color(0xFF00E5FF)
+              : Colors.white,
+          onTap: () => TransitionSheet.show(context, layer, project),
+        ),
+        if (layer.type == LayerType.text)
+          _buildToolBtn(
+            icon: Icons.text_format,
+            label: "Text Style",
+            color: const Color(0xFFFF9100),
+            onTap: () => TextStylingSheet.show(context, layer, project),
+          ),
         _buildToolBtn(
           icon: Icons.tune,
           label: "Properties",

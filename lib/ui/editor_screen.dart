@@ -6,6 +6,7 @@ import 'preview/preview_viewport.dart';
 import 'timeline/multi_track_timeline.dart';
 import 'dock/keyframe_diamond_bar.dart';
 import 'dock/action_dock.dart';
+import 'export/export_sheet.dart';
 
 class EditorScreen extends StatefulWidget {
   const EditorScreen({super.key});
@@ -100,7 +101,7 @@ class _EditorScreenState extends State<EditorScreen> {
               ),
               icon: const Icon(Icons.file_upload_outlined, size: 16),
               label: const Text("Export", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-              onPressed: () => _showExportDialog(context, project),
+              onPressed: () => ExportSheet.show(context, project),
             ),
           ),
         ],

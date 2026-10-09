@@ -105,6 +105,9 @@ class ClipWidget extends StatelessWidget {
 
                     if (hasEffects)
                       _buildMiniBadge("FX", const Color(0xFFFF4081)),
+
+                    if (layer.transitionIn != TransitionType.none || layer.transitionOut != TransitionType.none)
+                      _buildMiniBadge("TRANS", const Color(0xFF00E5FF)),
                   ],
                 ),
               ),
