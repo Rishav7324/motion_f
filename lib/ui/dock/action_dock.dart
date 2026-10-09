@@ -5,8 +5,12 @@ import '../../models/layer.dart';
 import 'layer_properties_sheet.dart';
 import '../masks/mask_editor_sheet.dart';
 import '../effects/effects_sheet.dart';
+import '../effects/chroma_key_sheet.dart';
+import '../speed/speed_ramping_sheet.dart';
 import '../transitions/transition_sheet.dart';
 import '../text/text_styling_sheet.dart';
+import '../audio/audio_library_sheet.dart';
+import '../assets/asset_library_sheet.dart';
 
 class ActionDock extends StatelessWidget {
   const ActionDock({super.key});
@@ -35,6 +39,19 @@ class ActionDock extends StatelessWidget {
           label: "Split",
           onTap: () => project.splitSelectedLayer(),
         ),
+        _buildToolBtn(
+          icon: Icons.speed,
+          label: "Speed (${layer.speed.toStringAsFixed(1)}x)",
+          color: (layer.speed != 1.0 || layer.isCurveSpeed) ? const Color(0xFFFFD600) : Colors.white,
+          onTap: () => SpeedRampingSheet.show(context, layer, project),
+        ),
+        if (layer.type == LayerType.video)
+          _buildToolBtn(
+            icon: Icons.palette,
+            label: "Chroma Key",
+            color: layer.chromaKeyEnabled ? const Color(0xFF00E676) : Colors.white,
+            onTap: () => ChromaKeySheet.show(context, layer, project),
+          ),
         _buildToolBtn(
           icon: Icons.masks,
           label: "Masks",
@@ -110,6 +127,9 @@ class ActionDock extends StatelessWidget {
               saturation: layer.saturation,
               temperature: layer.temperature,
               vignette: layer.vignette,
+              chromaKeyEnabled: layer.chromaKeyEnabled,
+              chromaKeyColor: layer.chromaKeyColor,
+              speed: layer.speed,
             );
             project.addLayer(clone);
           },
@@ -140,6 +160,18 @@ class ActionDock extends StatelessWidget {
           onTap: () => project.importMediaFile(),
         ),
         _buildToolBtn(
+          icon: Icons.auto_awesome,
+          label: "+ VFX Stock",
+          color: const Color(0xFFD500F9),
+          onTap: () => AssetLibrarySheet.show(context, project),
+        ),
+        _buildToolBtn(
+          icon: Icons.library_music,
+          label: "+ SFX / Music",
+          color: const Color(0xFF00E676),
+          onTap: () => AudioLibrarySheet.show(context, project),
+        ),
+        _buildToolBtn(
           icon: Icons.video_call,
           label: "+ Video",
           onTap: () {
@@ -150,22 +182,6 @@ class ActionDock extends StatelessWidget {
               startTime: project.playheadTime,
               duration: 5.0,
               trackIndex: 0,
-            ));
-          },
-        ),
-        _buildToolBtn(
-          icon: Icons.audiotrack,
-          label: "+ Audio",
-          color: const Color(0xFF00E676),
-          onTap: () {
-            project.addLayer(LayerItem(
-              id: "audio_${DateTime.now().millisecondsSinceEpoch}",
-              name: "Audio Track ${project.layers.where((l) => l.type == LayerType.audio).length + 1}",
-              type: LayerType.audio,
-              startTime: project.playheadTime,
-              duration: 6.0,
-              trackIndex: 1,
-              layerColor: const Color(0xFF00E676),
             ));
           },
         ),
@@ -224,6 +240,10 @@ class ActionDock extends StatelessWidget {
               project.aspectRatio = CanvasAspectRatio.landscape16_9;
             } else if (project.aspectRatio == CanvasAspectRatio.landscape16_9) {
               project.aspectRatio = CanvasAspectRatio.square1_1;
+            } else if (project.aspectRatio == CanvasAspectRatio.square1_1) {
+              project.aspectRatio = CanvasAspectRatio.ratio4_5;
+            } else if (project.aspectRatio == CanvasAspectRatio.ratio4_5) {
+              project.aspectRatio = CanvasAspectRatio.ratio21_9;
             } else {
               project.aspectRatio = CanvasAspectRatio.vertical9_16;
             }

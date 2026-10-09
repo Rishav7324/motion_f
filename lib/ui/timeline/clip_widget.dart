@@ -35,107 +35,182 @@ class ClipWidget extends StatelessWidget {
       left: left,
       top: 4,
       bottom: 4,
-      width: width,
-      child: GestureDetector(
-        onTap: () => project.selectLayer(layer.id),
-        child: Container(
-          decoration: BoxDecoration(
-            color: layer.layerColor.withOpacity(0.85),
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(
-              color: isSelected ? Colors.white : Colors.transparent,
-              width: isSelected ? 2.0 : 1.0,
-            ),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: Stack(
-            alignment: Alignment.centerLeft,
-            children: [
-              // 1. Procedural Background Texture: Waveform for Audio, Filmstrip for Video
-              if (layer.type == LayerType.audio)
-                Positioned.fill(
-                  child: CustomPaint(
-                    painter: AudioWaveformPainter(
-                      color: Colors.white.withOpacity(0.35),
-                      activeColor: const Color(0xFF00E5FF).withOpacity(0.6),
-                      progress: ((project.playheadTime - layer.startTime) / layer.duration).clamp(0.0, 1.0),
-                    ),
+      width: math.max(width, 24.0),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // Main Clip Body
+          Positioned.fill(
+            child: GestureDetector(
+              onTap: () => project.selectLayer(layer.id),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: layer.layerColor.withOpacity(0.85),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: isSelected ? Colors.white : Colors.transparent,
+                    width: isSelected ? 2.0 : 1.0,
                   ),
                 ),
-
-              if (layer.type == LayerType.video)
-                Positioned.fill(
-                  child: CustomPaint(
-                    painter: FilmstripPainter(
-                      color: Colors.black.withOpacity(0.2),
-                      sprocketColor: Colors.white.withOpacity(0.15),
-                    ),
-                  ),
-                ),
-
-              // 2. Clip Label & Feature Badges
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Row(
+                clipBehavior: Clip.antiAlias,
+                child: Stack(
+                  alignment: Alignment.centerLeft,
                   children: [
-                    _getLayerIcon(layer.type),
-                    const SizedBox(width: 4),
-                    Flexible(
-                      child: Text(
-                        layer.name,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          overflow: TextOverflow.ellipsis,
+                    // 1. Procedural Background Texture: Waveform for Audio, Filmstrip for Video
+                    if (layer.type == LayerType.audio)
+                      Positioned.fill(
+                        child: CustomPaint(
+                          painter: AudioWaveformPainter(
+                            color: Colors.white.withOpacity(0.35),
+                            activeColor: const Color(0xFF00E5FF).withOpacity(0.6),
+                            progress: ((project.playheadTime - layer.startTime) / layer.duration).clamp(0.0, 1.0),
+                          ),
                         ),
                       ),
+
+                    if (layer.type == LayerType.video)
+                      Positioned.fill(
+                        child: CustomPaint(
+                          painter: FilmstripPainter(
+                            color: Colors.black.withOpacity(0.2),
+                            sprocketColor: Colors.white.withOpacity(0.15),
+                          ),
+                        ),
+                      ),
+
+                    // 2. Clip Label & Feature Badges
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: Row(
+                        children: [
+                          _getLayerIcon(layer.type),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              layer.name,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+
+                          // Badges for Active Advanced Features
+                          if (layer.is3D)
+                            _buildMiniBadge("3D", const Color(0xFFD500F9)),
+
+                          if (layer.maskType != MaskType.none)
+                            _buildMiniBadge("MASK", const Color(0xFF00E5FF)),
+
+                          if (layer.trackMatte != TrackMatteType.none)
+                            _buildMiniBadge("MATTE", const Color(0xFFFFD600)),
+
+                          if (hasEffects)
+                            _buildMiniBadge("FX", const Color(0xFFFF4081)),
+
+                          if (layer.chromaKeyEnabled)
+                            _buildMiniBadge("CHROMA", const Color(0xFF00E676)),
+
+                          if (layer.speed != 1.0 || layer.isCurveSpeed)
+                            _buildMiniBadge("${layer.speed.toStringAsFixed(1)}x", const Color(0xFFFFD600)),
+
+                          if (layer.transitionIn != TransitionType.none || layer.transitionOut != TransitionType.none)
+                            _buildMiniBadge("TRANS", const Color(0xFF00E5FF)),
+                        ],
+                      ),
                     ),
-                    const SizedBox(width: 6),
 
-                    // Badges for Active Advanced Features
-                    if (layer.is3D)
-                      _buildMiniBadge("3D", const Color(0xFFD500F9)),
+                    // 3. Visual Keyframe Diamond Dots (After Effects / CapCut signature feature)
+                    ...keyframeTimes.map((kfTime) {
+                      final kfOffset = (kfTime - layer.startTime) * pixelsPerSecond;
+                      if (kfOffset < 0 || kfOffset > width) return const SizedBox.shrink();
 
-                    if (layer.maskType != MaskType.none)
-                      _buildMiniBadge("MASK", const Color(0xFF00E5FF)),
-
-                    if (layer.trackMatte != TrackMatteType.none)
-                      _buildMiniBadge("MATTE", const Color(0xFFFFD600)),
-
-                    if (hasEffects)
-                      _buildMiniBadge("FX", const Color(0xFFFF4081)),
-
-                    if (layer.transitionIn != TransitionType.none || layer.transitionOut != TransitionType.none)
-                      _buildMiniBadge("TRANS", const Color(0xFF00E5FF)),
+                      return Positioned(
+                        left: kfOffset - 5,
+                        top: 2,
+                        child: Transform.rotate(
+                          angle: 0.785398, // 45 degrees for diamond shape
+                          child: Container(
+                            width: 9,
+                            height: 9,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              border: Border.all(color: Colors.black54, width: 1.0),
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
                   ],
                 ),
               ),
+            ),
+          ),
 
-              // 3. Visual Keyframe Diamond Dots (After Effects / CapCut signature feature)
-              ...keyframeTimes.map((kfTime) {
-                final kfOffset = (kfTime - layer.startTime) * pixelsPerSecond;
-                if (kfOffset < 0 || kfOffset > width) return const SizedBox.shrink();
-
-                return Positioned(
-                  left: kfOffset - 5,
-                  top: 2,
-                  child: Transform.rotate(
-                    angle: 0.785398, // 45 degrees for diamond shape
-                    child: Container(
-                      width: 9,
-                      height: 9,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        border: Border.all(color: Colors.black54, width: 1.0),
-                      ),
+          // Interactive Trimming Drag Handles (CapCut style)
+          if (isSelected) ...[
+            // Left Trim Handle
+            Positioned(
+              left: -6,
+              top: 0,
+              bottom: 0,
+              width: 14,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onHorizontalDragUpdate: (details) {
+                  final deltaTime = details.primaryDelta! / pixelsPerSecond;
+                  project.trimSelectedStart(layer.startTime + deltaTime);
+                },
+                child: Center(
+                  child: Container(
+                    width: 10,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(4),
+                      boxShadow: const [BoxShadow(color: Colors.black45, blurRadius: 4)],
+                    ),
+                    child: const Center(
+                      child: Icon(Icons.drag_handle, size: 10, color: Colors.black87),
                     ),
                   ),
-                );
-              }),
-            ],
-          ),
-        ),
+                ),
+              ),
+            ),
+
+            // Right Trim Handle
+            Positioned(
+              right: -6,
+              top: 0,
+              bottom: 0,
+              width: 14,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onHorizontalDragUpdate: (details) {
+                  final deltaTime = details.primaryDelta! / pixelsPerSecond;
+                  project.trimSelectedEnd(layer.startTime + layer.duration + deltaTime);
+                },
+                child: Center(
+                  child: Container(
+                    width: 10,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(4),
+                      boxShadow: const [BoxShadow(color: Colors.black45, blurRadius: 4)],
+                    ),
+                    child: const Center(
+                      child: Icon(Icons.drag_handle, size: 10, color: Colors.black87),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

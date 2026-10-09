@@ -192,6 +192,30 @@ class PreviewViewport extends StatelessWidget {
   Widget _renderLayerContent(LayerItem layer) {
     switch (layer.type) {
       case LayerType.video:
+        if (layer.chromaKeyEnabled) {
+          return Container(
+            width: 220,
+            height: 140,
+            decoration: BoxDecoration(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFF00E676), width: 1.5),
+            ),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.auto_awesome, size: 40, color: Color(0xFF00E676)),
+                  const SizedBox(height: 4),
+                  Text(
+                    "${layer.name} [KEYED]",
+                    style: const TextStyle(color: Color(0xFF00E676), fontSize: 10, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
         return Container(
           width: 220,
           height: 140,

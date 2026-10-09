@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'models/project.dart';
 import 'bridge/native_engine_bridge.dart';
-import 'ui/editor_screen.dart';
+import 'ui/home/home_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,8 +27,14 @@ class MotionFApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => ProjectModel(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ProjectManager()),
+        ChangeNotifierProxyProvider<ProjectManager, ProjectModel>(
+          create: (context) => context.read<ProjectManager>().activeProject,
+          update: (context, manager, previous) => manager.activeProject,
+        ),
+      ],
       child: MaterialApp(
         title: 'MotionF',
         debugShowCheckedModeBanner: false,
@@ -43,7 +49,7 @@ class MotionFApp extends StatelessWidget {
           ),
           fontFamily: 'Roboto',
         ),
-        home: const EditorScreen(),
+        home: const HomeScreen(),
       ),
     );
   }

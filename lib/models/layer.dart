@@ -85,6 +85,23 @@ class LayerItem {
   double temperature;         // -1.0 to 1.0 (default 0.0)
   double vignette;            // 0.0 to 1.0 (default 0.0)
 
+  // Chroma Key / Green Screen Removal
+  bool chromaKeyEnabled;
+  Color chromaKeyColor;
+  double chromaSimilarity;  // 0.0 to 1.0 (threshold)
+  double chromaSmoothness;  // 0.0 to 1.0 (feather)
+  double chromaSpill;       // 0.0 to 1.0 (spill reduction)
+
+  // CapCut Speed Ramping & Time Remapping
+  double speed;
+  bool isCurveSpeed;
+  String curveSpeedPreset; // "Standard", "Montage", "Hero", "Bullet", "Jump Cut"
+
+  // Audio Envelope
+  double volume; // 0.0 to 2.0 (1.0 = 100%)
+  double fadeInDuration;
+  double fadeOutDuration;
+
   // CapCut Transitions (In / Out)
   TransitionType transitionIn;
   double transitionInDuration;
@@ -161,6 +178,17 @@ class LayerItem {
     this.saturation = 1.0,
     this.temperature = 0.0,
     this.vignette = 0.0,
+    this.chromaKeyEnabled = false,
+    this.chromaKeyColor = const Color(0xFF00FF00), // Default green screen
+    this.chromaSimilarity = 0.4,
+    this.chromaSmoothness = 0.1,
+    this.chromaSpill = 0.5,
+    this.speed = 1.0,
+    this.isCurveSpeed = false,
+    this.curveSpeedPreset = "Standard",
+    this.volume = 1.0,
+    this.fadeInDuration = 0.0,
+    this.fadeOutDuration = 0.0,
     this.transitionIn = TransitionType.none,
     this.transitionInDuration = 0.5,
     this.transitionOut = TransitionType.none,
@@ -216,6 +244,22 @@ class LayerItem {
         return const Color(0xFFD500F9); // Electric Purple
       case LayerType.adjustment:
         return const Color(0xFF00E5FF); // Cyan
+    }
+  }
+
+  void trimStart(double newStart) {
+    if (newStart < 0) newStart = 0;
+    final currentEnd = startTime + duration;
+    if (newStart < currentEnd - 0.2) {
+      final delta = newStart - startTime;
+      startTime = newStart;
+      duration -= delta;
+    }
+  }
+
+  void trimEnd(double newEnd) {
+    if (newEnd > startTime + 0.2) {
+      duration = newEnd - startTime;
     }
   }
 

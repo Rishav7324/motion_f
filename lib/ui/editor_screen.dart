@@ -51,8 +51,8 @@ class _EditorScreenState extends State<EditorScreen> {
         backgroundColor: const Color(0xFF141519),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.white70),
-          onPressed: () {},
+          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white70, size: 18),
+          onPressed: () => Navigator.pop(context),
         ),
         title: Row(
           children: [
