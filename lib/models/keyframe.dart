@@ -1,6 +1,13 @@
 import 'curve_preset.dart';
 import '../bridge/native_engine_bridge.dart';
 
+enum KeyframeEase {
+  linear,
+  easeIn,
+  easeOut,
+  easeInOut,
+}
+
 class Keyframe {
   double time; // in seconds
   double value;
@@ -16,7 +23,37 @@ class Keyframe {
     this.cp1y = 0.0,
     this.cp2x = 0.58,
     this.cp2y = 1.0,
-  });
+    KeyframeEase? easeType,
+  }) {
+    if (easeType != null) {
+      switch (easeType) {
+        case KeyframeEase.linear:
+          cp1x = 0.0;
+          cp1y = 0.0;
+          cp2x = 1.0;
+          cp2y = 1.0;
+          break;
+        case KeyframeEase.easeIn:
+          cp1x = 0.42;
+          cp1y = 0.0;
+          cp2x = 1.0;
+          cp2y = 1.0;
+          break;
+        case KeyframeEase.easeOut:
+          cp1x = 0.0;
+          cp1y = 0.0;
+          cp2x = 0.58;
+          cp2y = 1.0;
+          break;
+        case KeyframeEase.easeInOut:
+          cp1x = 0.42;
+          cp1y = 0.0;
+          cp2x = 0.58;
+          cp2y = 1.0;
+          break;
+      }
+    }
+  }
 
   void applyPreset(CurvePreset preset) {
     cp1x = preset.x1;
@@ -66,6 +103,8 @@ class AnimatableProperty {
       keyframes.sort((a, b) => a.time.compareTo(b.time));
     }
   }
+
+  void addKeyframe(Keyframe kf) => addOrUpdateKeyframe(kf);
 
   void removeKeyframeAt(double time) {
     keyframes.removeWhere((k) => (k.time - time).abs() < 0.05);
